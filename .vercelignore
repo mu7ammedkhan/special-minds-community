@@ -1,0 +1,9 @@
+node_modules
+.next
+.data
+.env*
+.vercel
+.claude
+docs
+scripts/talent-mock.mjs
+tsconfig.tsbuildinfo
