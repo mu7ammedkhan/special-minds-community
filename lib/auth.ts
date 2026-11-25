@@ -53,6 +53,9 @@ export type Me = {
 export const SESSION_COOKIE = "smm_session";
 const SESSION_DAYS = 30;
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
+export const hashToken = sha;
+/** The shape of a one-time sign-in link token (32 random bytes, base64url). */
+export const LINK_TOKEN = /^[A-Za-z0-9_-]{20,100}$/;
 
 export async function clientIp(): Promise<string | null> {
   const h = await headers();

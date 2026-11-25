@@ -40,7 +40,9 @@ export async function sendEmail(m: { to: string; subject: string; text: string; 
       r = { status: "failed", error: String((e as Error).message ?? e).slice(0, 200) };
     }
   }
-  await log("email", m.to, m.subject, m.redact ? m.text.split(m.redact).join("••••••") : m.text, m.purpose, m.memberId, r);
+  // A sign-in code never reaches the log, in the subject or the text, so nobody can read it there.
+  const hide = (s: string) => (m.redact ? s.split(m.redact).join("••••••") : s);
+  await log("email", m.to, hide(m.subject), hide(m.text), m.purpose, m.memberId, r);
   return r;
 }
 

@@ -19,7 +19,7 @@ export default async function HelpRequests() {
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-4 py-6 sm:px-6">
       <PageHeader title={t("Help requests")} subtitle={t("Families who pressed “Ask Special Minds for help”.")} />
-      {!crm && <Alert tone="info" title={t("The CRM link is off in this preview")}>{t("Set CRM_INTAKE_URL, CRM_INTAKE_KEY and CRM_SOURCE_SITE on the host and each request becomes a lead in the CRM, the same way website enquiries do.")}</Alert>}
+      {!crm && <Alert tone="info" title={t("The CRM link is off")}>{t("Set CRM_INTAKE_URL, CRM_INTAKE_KEY and CRM_SOURCE_SITE on the host and each request becomes a lead in the CRM, the same way website enquiries do.")}</Alert>}
       {rows.length ? rows.map((h) => (
         <Card key={h.id} className="p-4">
           <div className="flex flex-col gap-3 sm:flex-row">

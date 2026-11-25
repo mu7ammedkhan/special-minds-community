@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { demoLoginsEnabled, DEMO_DOMAIN, endSession, getMe, markMfaOk, readAddress, sendLoginCode, startSession, verifyLoginCode } from "@/lib/auth";
+import { demoLoginsEnabled, DEMO_DOMAIN, endSession, getMe, hashToken, LINK_TOKEN, markMfaOk, readAddress, sendLoginCode, startSession, verifyLoginCode } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { one, query } from "@/lib/db";
 import { isLocale, makeT } from "@/lib/i18n";
@@ -72,4 +72,18 @@ export async function verifyMfa(_prev: { error?: string }, fd: FormData): Promis
   if (!row?.totp_secret || !verifyTotp(row.totp_secret, String(fd.get("code") ?? ""))) return { error: t("That code isn't right. Use the newest code in your authenticator app.") };
   await markMfaOk();
   redirect(safeNext(fd.get("next")));
+}
+
+/** Continue on a one-time sign-in link page: the link is used here, once, and never again. */
+export async function signInWithLink(fd: FormData) {
+  const token = String(fd.get("token") ?? "");
+  if (!LINK_TOKEN.test(token)) redirect("/login?link=bad");
+  const row = await one<{ member_id: number }>(
+    `update login_links set used_at = now() where id = $1 and used_at is null and expires_at > now() returning member_id`, [hashToken(token)]);
+  if (!row) redirect("/login?link=used");
+  const m = await one<{ id: number; full_name: string; status: string; totp_on: boolean }>(`select id, full_name, status, totp_on from members where id = $1`, [row.member_id]);
+  if (!m || !["active", "pending"].includes(m.status)) redirect("/login?link=bad");
+  await startSession(Number(m.id), false);
+  await audit({ id: Number(m.id), fullName: m.full_name }, "signin", `member:${m.id}`, { via: "one-time link" });
+  redirect(m.totp_on ? "/mfa" : "/");
 }

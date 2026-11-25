@@ -137,7 +137,7 @@ export function OpportunityPanel({ postId, filled: filledInit, rows: init, stats
         <div className="ms-auto flex flex-wrap gap-2">
           {talentReady
             ? <Button size="sm" variant="secondary" disabled={!shortlisted} onClick={async () => { const r = await talentAction(postId); setMsg(r.ok ? { text: t("Sent {n} shortlisted to the Talent portal.", { n: r.sent ?? 0 }) } : { text: r.error ?? "", bad: true }); router.refresh(); }}><Send className="size-4 rtl:-scale-x-100" />{t("Send shortlist to Talent")}</Button>
-            : <span className="self-center text-xs text-soft" title={t("Set TALENT_SHORTLIST_URL and TALENT_SHORTLIST_SECRET on the host, and build the receiving side in the Talent portal.")}>{t("Talent portal link: off in this preview")}</span>}
+            : <span className="self-center text-xs text-soft" title={t("Set TALENT_SHORTLIST_URL and TALENT_SHORTLIST_SECRET on the host, and build the receiving side in the Talent portal.")}>{t("Talent portal link: off")}</span>}
           <Button size="sm" variant={filled ? "secondary" : "good"} onClick={async () => { if (!filled && !window.confirm(t("Mark as filled? Everyone interested who isn't shortlisted is told it's filled."))) return; await fillAction(postId, !filled); setFilled(!filled); router.refresh(); }}>
             {filled ? t("Reopen") : <><CheckCircle2 className="size-4" />{t("Mark as filled")}</>}
           </Button>

@@ -12,7 +12,7 @@ import { KIND_LABEL, STAFF_LABEL, type Kind, type StaffRole } from "@/lib/option
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Sign in" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; link?: string; deleted?: string }> }) {
   const sp = await searchParams;
   const me = await getMe();
   if (me) redirect(sp.next?.startsWith("/") ? sp.next : "/");
@@ -26,6 +26,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <AuthShell locale={locale} back="/login">
       <h1 className="font-display text-2xl text-ink">{t("Welcome to the Special Minds Community")}</h1>
       <p className="mt-1.5 text-base text-soft">{t("Specialists and families, together. Sign in or join with your email or mobile number.")}</p>
+      {sp.link && <p role="alert" className="mt-4 rounded-xl bg-apricot-50 px-4 py-3 text-sm text-caution">{t("That sign-in link has expired or was already used. Sign in with your email or mobile number instead.")}</p>}
+      {sp.deleted && <p role="status" className="mt-4 rounded-xl bg-moss-50 px-4 py-3 text-sm text-moss">{t("Your account has been deleted.")}</p>}
       <div className="mt-6"><LoginForm next={sp.next ?? "/"} /></div>
       <p className="mt-5 text-center text-sm text-soft">{t("New here?")} <a href="/join" className="font-semibold text-brand hover:text-brand-deep">{t("Ask to join")}</a></p>
       {demo.length > 0 && (
