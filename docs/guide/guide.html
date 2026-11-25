@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Special Minds Community: user guide</title>
+<style>
+  @font-face { font-family: "Fraunces"; src: url("fonts/fraunces-latin.woff2") format("woff2"); font-weight: 100 900; font-style: normal; }
+  @font-face { font-family: "Fraunces"; src: url("fonts/fraunces-italic-latin.woff2") format("woff2"); font-weight: 100 900; font-style: italic; }
+  @font-face { font-family: "Grotesk"; src: url("fonts/space-grotesk-latin.woff2") format("woff2"); font-weight: 300 700; }
+  :root { --ink: #221a38; --ink-soft: #453d5e; --soft: #615a78; --brand: #4a2d8f; --brand-deep: #2a1a52; --brand-50: #eee9f7; --brand-100: #e0d8f3;
+          --paper: #faf8f3; --hair: #e6e0ee; --moss: #1f7a4d; --moss-50: #e7f6ee; --apricot-50: #fcf1e8; --caution: #8a5227; --danger: #a8423f;
+          --rail: #2a1a52; --rail-text: #ddd3f5; --champagne: #d6c3a0; }
+  @page { size: A4; margin: 16mm 16mm 18mm; }
+  @page {
+    @bottom-left { content: "Special Minds Community · User guide"; font: 600 7.5pt "Grotesk", system-ui, sans-serif; color: #615a78; }
+    @bottom-right { content: counter(page) " / " counter(pages); font: 600 7.5pt "Grotesk", system-ui, sans-serif; color: #615a78; }
+  }
+  @page :first { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font-family: "Grotesk", system-ui, sans-serif; color: var(--ink); font-size: 11pt; line-height: 1.5; }
+  h1, h2, h3 { font-family: "Fraunces", Georgia, serif; font-weight: 600; line-height: 1.2; margin: 0; letter-spacing: -0.005em; }
+  h2 { font-size: 25pt; color: var(--ink); margin-bottom: 3mm; }
+  h3 { font-size: 14pt; margin: 6mm 0 2mm; break-after: avoid; }
+  p { margin: 0 0 2.6mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 5.5mm; }
+  li { margin-bottom: 1.2mm; }
+  strong { font-weight: 700; }
+  a { color: var(--brand); text-decoration: none; font-weight: 600; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: 8.8pt; background: var(--paper); padding: 0.3mm 1.2mm; border-radius: 1.2mm; }
+
+  /* cover */
+  .cover { position: relative; overflow: hidden; height: 296.8mm; padding: 26mm 22mm; display: flex; flex-direction: column; background: var(--rail); color: #fff; break-after: page; }
+  .cover .mark { position: absolute; right: -46mm; bottom: -46mm; width: 190mm; height: 190mm; opacity: 0.07; }
+  .cover .brand { position: relative; display: flex; align-items: center; gap: 4mm; }
+  .cover .brand img { width: 15mm; height: 15mm; }
+  .cover .brand span { font-family: "Fraunces", Georgia, serif; font-size: 17pt; font-weight: 600; line-height: 1.1; }
+  .cover .brand b { display: block; font-family: "Grotesk", system-ui, sans-serif; font-size: 11pt; font-weight: 600; color: var(--champagne); }
+  .cover h1 { position: relative; margin-top: 48mm; font-size: 44pt; font-weight: 600; line-height: 1.12; }
+  .cover h1 em { font-weight: 400; color: var(--champagne); }
+  .cover .lede { position: relative; margin-top: 6mm; font-size: 14pt; color: var(--rail-text); max-width: 145mm; line-height: 1.45; }
+  .cover .try { position: relative; margin-top: auto; background: #fff; color: var(--ink); border-radius: 5mm; padding: 6mm 7mm; }
+  .cover .try p { margin: 0 0 1.5mm; }
+  .cover .meta { position: relative; margin-top: 6mm; color: var(--rail-text); font-size: 9.5pt; }
+
+  section.chapter { break-before: page; }
+  .eyebrow { font-size: 10pt; font-weight: 600; color: var(--brand); margin-bottom: 1mm; }
+  .part { display: inline-block; font-size: 8.5pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand-deep); background: var(--champagne); border-radius: 99px; padding: 0.4mm 2.6mm; margin-bottom: 2mm; }
+  .intro { font-size: 12.5pt; color: var(--ink-soft); margin-bottom: 5mm; }
+  figure { margin: 3mm 0 5mm; break-inside: avoid; }
+  figure img { display: block; width: 86%; margin: 0 auto; border: 1px solid var(--hair); border-radius: 2.5mm; }
+  figure.full img { width: 100%; }
+  figure.small img { width: 72%; }
+  figure.narrow img { width: 62%; }
+  figure.smaller img { width: 54%; }
+  figure.tiny img { width: 46%; }
+  figure.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; align-items: start; }
+  figure.pair img { width: 100%; }
+  figure.pair figcaption { grid-column: 1 / -1; }
+  figure.pair.compact { width: 78%; margin-left: auto; margin-right: auto; }
+  .side.slim { grid-template-columns: 46mm 1fr; }
+  .side { display: grid; grid-template-columns: 70mm 1fr; gap: 7mm; align-items: start; margin: 3mm 0 4mm; break-inside: avoid; }
+  .side.wide { grid-template-columns: 88mm 1fr; }
+  .side.narrowfig { grid-template-columns: 58mm 1fr; }
+  .side figure { margin: 0; }
+  .side figure img { width: 100%; }
+  .side h3:first-child { margin-top: 0; }
+  figure.phones { display: flex; gap: 7mm; justify-content: center; flex-wrap: wrap; }
+  figure.phones img { width: 48mm; margin: 0; }
+  figure.phones figcaption { width: 100%; }
+  figcaption { margin-top: 2mm; font-size: 9.5pt; color: var(--soft); text-align: center; }
+  .shot { position: relative; width: 100%; margin: 0 auto; }
+  .shot img { width: 100%; }
+  .shot i { position: absolute; width: 6.2mm; height: 6.2mm; margin: -3.1mm 0 0 -3.1mm; border-radius: 50%; background: var(--champagne); color: var(--brand-deep); border: 0.5mm solid #fff;
+            font: normal 700 8.5pt/5.2mm "Grotesk", system-ui, sans-serif; text-align: center; box-shadow: 0 0.6mm 1.6mm rgba(0,0,0,0.25); }
+  .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2mm 6mm; margin: 2mm 0 2mm; font-size: 9.6pt; line-height: 1.4; }
+  figure.shell .shot { width: 90%; }
+  .keys div { display: flex; gap: 2.5mm; align-items: baseline; }
+  .keys b { flex: none; width: 5.2mm; height: 5.2mm; border-radius: 50%; background: var(--champagne); color: var(--brand-deep); font-size: 8pt; display: inline-flex; align-items: center; justify-content: center; }
+  .note { border-radius: 3mm; padding: 3.5mm 4.5mm; margin: 3mm 0 4mm; break-inside: avoid; font-size: 10.5pt; }
+  .note b.t { display: block; margin-bottom: 0.6mm; font-size: 10.5pt; }
+  .tip { background: var(--moss-50); color: #17472f; } .tip b.t { color: var(--moss); }
+  .admin { background: var(--brand-50); color: var(--brand-deep); } .admin b.t { color: var(--brand); }
+  .know { background: var(--apricot-50); color: #63391a; } .know b.t { color: var(--caution); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; font-size: 10pt; break-inside: avoid; }
+  th, td { text-align: left; vertical-align: top; padding: 1.6mm 2.5mm; border-bottom: 1px solid var(--hair); }
+  th { font-size: 9.5pt; color: var(--soft); font-weight: 600; background: var(--paper); }
+  table.tight th, table.tight td { padding-top: 1.1mm; padding-bottom: 1.1mm; }
+  table.roles th:not(:first-child), table.roles td:not(:first-child) { text-align: center; width: 13%; }
+  table.roles td.y { color: var(--moss); font-weight: 700; }
+  .flow { display: flex; align-items: stretch; gap: 2mm; margin: 4mm 0 5mm; }
+  .flow div { flex: 1; background: var(--paper); border: 1px solid var(--hair); border-radius: 3mm; padding: 3mm; font-size: 9.2pt; line-height: 1.35; }
+  .flow div b { display: block; font-size: 10pt; color: var(--brand-deep); margin-bottom: 1mm; }
+  .flow div.on { background: var(--brand); border-color: var(--brand); color: #fff; } .flow div.on b { color: #fff; }
+  .toc { columns: 2; column-gap: 10mm; margin-top: 4mm; }
+  .toc div { break-inside: avoid; padding: 1.9mm 0; border-bottom: 1px solid var(--hair); display: flex; gap: 3mm; }
+  .toc span { color: var(--brand); font-weight: 800; width: 7mm; flex: none; }
+  .toc a { break-inside: avoid; padding: 1.9mm 0; border-bottom: 1px solid var(--hair); display: flex; gap: 3mm; color: inherit; font-weight: 400; }
+  .toc a em { margin-left: auto; font-style: normal; font-weight: 600; color: var(--soft); }
+  .toc .head { border: 0; padding: 4mm 0 1mm; font-size: 9pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--soft); }
+  .toc .head:first-child { padding-top: 0; }
+  .toc .head.p2 { break-before: column; padding-top: 0; }
+  .steps { counter-reset: s; list-style: none; padding-left: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 8.5mm; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: 0.2mm; width: 5.6mm; height: 5.6mm; border-radius: 50%; background: var(--brand); color: #fff;
+                      font-size: 8pt; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .check li { list-style: none; position: relative; padding-left: 6.5mm; } .check { padding-left: 0; }
+  .check li::before { content: ""; position: absolute; left: 0; top: 1.3mm; width: 3.2mm; height: 3.2mm; border: 1.6px solid var(--brand); border-radius: 1mm; }
+  .pill { display: inline-block; font-size: 9pt; font-weight: 600; border-radius: 99px; padding: 0.2mm 2.2mm; white-space: nowrap; }
+  .p-red { background: #fbeeed; color: var(--danger); } .p-amber { background: var(--apricot-50); color: var(--caution); } .p-brand { background: var(--brand-50); color: var(--brand); } .p-moss { background: var(--moss-50); color: var(--moss); }
+  .faq .qa { columns: 2; column-gap: 9mm; margin-top: 3mm; } .faq .q { break-inside: avoid; margin-bottom: 3.4mm; }
+  .faq .q h3 { margin: 0; font-size: 11.5pt; } .faq .q p { margin: 1mm 0 0; font-size: 10pt; }
+  .keep { break-inside: avoid; }
+  .ar { font-family: "Geeza Pro", "Noto Naskh Arabic", system-ui, sans-serif; }
+</style>
+</head>
+<body>
+
+<!-- ================================================================ cover -->
+<div class="cover">
+  <img class="mark" src="logo-mark.svg" alt="">
+  <div class="brand"><img src="logo-mark.svg" alt=""><span>Special Minds <b>Community</b></span></div>
+  <h1>How to use the<br><em>Special Minds Community</em></h1>
+  <p class="lede">For specialists, families and the Special Minds team: joining, talking, opportunities and events, and how to run the community safely.</p>
+  <div class="try">
+    <p><strong>The community:</strong> <a href="https://community.specialminds.app">community.specialminds.app</a>. Sign in with your email or mobile number. There is no password.</p>
+    <p><strong>Try it first:</strong> <a href="https://special-minds-community-preview.vercel.app">special-minds-community-preview.vercel.app</a> holds made-up people only. Click one of the demo accounts under the sign-in form to see the community as a specialist, a parent or an admin.</p>
+    <p style="color:var(--soft);font-size:9.3pt;margin:0">Every picture in this guide uses made-up people and conversations.</p>
+  </div>
+  <p class="meta">Special Minds · November 2026</p>
+</div>
+
+<!-- ============================================================= contents -->
+<section>
+  <div class="eyebrow">Contents</div>
+  <h2>What's in this guide</h2>
+  <p class="intro" style="margin-bottom:2mm">Part 1 is for everyone in the community. Part 2 is for the Special Minds team who run it: the owner, admins and moderators.</p>
+  <div class="toc">
+    <div class="head">Part 1 · For everyone</div>
+    <a href="#c1"><span>1</span>The community in one page<em>3</em></a>
+    <a href="#c2"><span>2</span>Joining<em>4</em></a>
+    <a href="#c3"><span>3</span>Signing in<em>5</em></a>
+    <a href="#c4"><span>4</span>Finding your way<em>6</em></a>
+    <a href="#c5"><span>5</span>Talking in a channel<em>7</em></a>
+    <a href="#c6"><span>6</span>Forums and Ask a specialist<em>9</em></a>
+    <a href="#c7"><span>7</span>Opportunities, for specialists<em>11</em></a>
+    <a href="#c8"><span>8</span>Events and the library<em>12</em></a>
+    <a href="#c9"><span>9</span>The families' space<em>13</em></a>
+    <a href="#c10"><span>10</span>Private messages<em>14</em></a>
+    <a href="#c11"><span>11</span>Notifications<em>15</em></a>
+    <a href="#c12"><span>12</span>Search, profiles and your account<em>17</em></a>
+    <a href="#c13"><span>13</span>On your phone<em>19</em></a>
+    <div class="head p2">Part 2 · For the Special Minds team</div>
+    <a href="#c14"><span>14</span>Owner, admins and moderators<em>20</em></a>
+    <a href="#c15"><span>15</span>The admin area and first-time setup<em>21</em></a>
+    <a href="#c16"><span>16</span>Inviting people<em>22</em></a>
+    <a href="#c17"><span>17</span>Join requests and members<em>24</em></a>
+    <a href="#c18"><span>18</span>Spaces and channels<em>26</em></a>
+    <a href="#c19"><span>19</span>Posting an opportunity and choosing people<em>28</em></a>
+    <a href="#c20"><span>20</span>Broadcasts and scheduled posts<em>30</em></a>
+    <a href="#c21"><span>21</span>Keeping it safe<em>32</em></a>
+    <a href="#c22"><span>22</span>Help requests<em>34</em></a>
+    <a href="#c23"><span>23</span>Settings, connections and logs<em>35</em></a>
+    <a href="#c24"><span>24</span>Before you invite everyone<em>37</em></a>
+    <a href="#c25"><span>25</span>Questions people ask<em>38</em></a>
+  </div>
+</section>
+
+<!-- ============================================================ 1. idea -->
+<section id="c1" class="chapter">
+  <div class="part">Part 1 · For everyone</div>
+  <div class="eyebrow">1 · The idea</div>
+  <h2>The community in one page</h2>
+  <p class="intro">One place for the specialists who work with Special Minds and the families they support, in place of scattered WhatsApp groups. It is our own app, in English and Arabic, and Special Minds decides who joins and who can post where.</p>
+  <div class="flow">
+    <div><b>A space</b>One community for one group in one country: Specialists · UAE, Families · UAE, Specialists · India</div>
+    <div class="on"><b>Channels</b>The rooms inside a space: news, chat, questions, opportunities, events</div>
+    <div><b>Posts</b>Messages, topics, opportunities and events</div>
+    <div><b>Replies</b>Threads, comments, reactions, votes and "I'm interested"</div>
+  </div>
+  <h3>Seven kinds of channel</h3>
+  <table class="tight">
+    <tr><th style="width:24%">Kind</th><th>What it's for</th><th style="width:26%">Who starts posts</th></tr>
+    <tr><td><strong>Announcements</strong></td><td>News from Special Minds. Members react, and reply where allowed.</td><td>Special Minds staff</td></tr>
+    <tr><td><strong>Chat</strong></td><td>A running conversation, with replies in threads.</td><td>Members</td></tr>
+    <tr><td><strong>Forum</strong></td><td>Titled topics with replies. Best for questions people look up later.</td><td>Members</td></tr>
+    <tr><td><strong>Opportunities</strong></td><td>New cases for specialists, with an "I'm interested" button.</td><td>Special Minds staff</td></tr>
+    <tr><td><strong>Feed</strong></td><td>Posts with photos, likes and comments, like a Facebook group.</td><td>Members</td></tr>
+    <tr><td><strong>Events</strong></td><td>Workshops, meetups and webinars, with RSVP and reminders.</td><td>Special Minds staff</td></tr>
+    <tr><td><strong>Library</strong></td><td>Guides, templates, files and links.</td><td>Special Minds staff</td></tr>
+  </table>
+  <h3>Who's who</h3>
+  <table class="tight">
+    <tr><th style="width:24%">Member</th><th>Who they are</th></tr>
+    <tr><td><strong>Specialists</strong></td><td>Shadow teachers, learning support assistants, therapists, behaviour analysts, psychologists and others who work with Special Minds.</td></tr>
+    <tr><td><strong>Parents and carers</strong></td><td>Families of children with additional needs. They have their own space, apart from the specialists' spaces.</td></tr>
+    <tr><td><strong>Guests</strong></td><td>Someone invited for a while, such as a visiting trainer.</td></tr>
+    <tr><td><strong>Special Minds team</strong></td><td>The owner, admins and moderators. Their posts carry a <span class="pill p-moss">Special Minds team</span> badge.</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ 2. joining -->
+<section id="c2" class="chapter">
+  <div class="eyebrow">2 · Getting in</div>
+  <h2>Joining</h2>
+  <p class="intro">Specialists join with an invitation from Special Minds. Families ask to join, and a Special Minds admin approves them.</p>
+  <h3>Specialists: an invitation</h3>
+  <p>Special Minds sends you a link, or shows a QR code at a training day. Your own invite may already hold your role, city and languages from the Talent portal. Open the link, confirm your email or mobile number with a code (section 3), and you're in.</p>
+  <h3>Families: ask to join</h3>
+  <div class="side">
+    <figure><img src="shots/join-choose.jpg" alt=""><figcaption>community.specialminds.app/join</figcaption></figure>
+    <div>
+      <ol class="steps">
+        <li>Open <strong>community.specialminds.app/join</strong>, or tap <strong>Ask to join</strong> on the sign-in page.</li>
+        <li>Choose <strong>Families · UAE</strong>.</li>
+        <li>Confirm your email or mobile number with the 6-digit code you receive.</li>
+        <li>Answer two short questions, such as your child's age and how you heard about Special Minds.</li>
+        <li>Wait for an admin to approve you, usually within a day. You're told as soon as you're in.</li>
+      </ol>
+    </div>
+  </div>
+  <figure class="pair compact">
+    <img src="shots/join-request.jpg" alt="">
+    <img src="shots/waiting.jpg" alt="">
+    <figcaption>Left: confirming your email or number. Right: what you see while your request waits.</figcaption>
+  </figure>
+  <div class="note know"><b class="t">Your details</b>After you join, add your name, the name others see, your city and your languages in My account. Specialists also add their roles, skills and availability (section 12).</div>
+</section>
+
+<!-- ============================================================ 3. signing in -->
+<section id="c3" class="chapter">
+  <div class="eyebrow">3 · Every day</div>
+  <h2>Signing in</h2>
+  <p class="intro">There is no password to remember. You sign in with a 6-digit code sent to your email, or by WhatsApp to your mobile number.</p>
+  <figure class="pair compact">
+    <img src="shots/signin.jpg" alt="">
+    <img src="shots/signin-code.jpg" alt="">
+    <figcaption>Type your email or mobile number, then the code you receive.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>Open <strong>community.specialminds.app</strong>.</li>
+    <li>Type your <strong>email</strong>, or your <strong>mobile number with its country code</strong>, like +971 50 123 4567. Press <strong>Send my code</strong>.</li>
+    <li>Type the 6-digit code from your email or WhatsApp. It works for 10 minutes.</li>
+  </ol>
+  <p>You stay signed in on that phone or computer for 30 days. Use the same email or number every time: it's how the community knows you.</p>
+  <div class="note know"><b class="t">Never share your code</b>Special Minds will never ask you for it. If you ask for more than six codes in an hour, wait an hour and try again.</div>
+  <div class="note tip"><b class="t">Arabic</b>The <span class="ar">العربية</span> button at the top of the sign-in page switches the whole community to Arabic.</div>
+</section>
+
+<!-- ============================================================ 4. finding your way -->
+<section id="c4" class="chapter">
+  <div class="eyebrow">4 · Around the screen</div>
+  <h2>Finding your way</h2>
+  <p class="intro">On a computer the community has three parts: your spaces on the far left, the channels of the space you're in, and the channel itself.</p>
+  <figure class="full shell">
+    <div class="shot">
+      <img src="shots/shell.jpg" alt="">
+      <i style="left:5.4%;top:13%">1</i>
+      <i style="left:18.5%;top:8.6%">2</i>
+      <i style="left:24.2%;top:31%">3</i>
+      <i style="left:24.2%;top:57.5%">4</i>
+      <i style="left:52%;top:4.5%">5</i>
+      <i style="left:89%;top:4.5%">6</i>
+      <i style="left:60%;top:91%">7</i>
+    </div>
+    <figcaption>Specialists · UAE, #General, as a specialist sees it.</figcaption>
+  </figure>
+  <div class="keys">
+    <div><b>1</b><span><strong>Your spaces.</strong> One icon each. Below them: Messages, Search and your notifications.</span></div>
+    <div><b>2</b><span><strong>The space you're in.</strong> Its name and what it's for.</span></div>
+    <div><b>3</b><span><strong>Channels.</strong> Bold means something new; a number counts it. A padlock is a private channel.</span></div>
+    <div><b>4</b><span><strong>Messages.</strong> Your private conversations (section 10).</span></div>
+    <div><b>5</b><span><strong>The channel.</strong> Click its name for what it's for, and to leave it.</span></div>
+    <div><b>6</b><span><strong>Members and alerts.</strong> How many are in it, and what you're told about (section 11).</span></div>
+    <div><b>7</b><span><strong>Write here.</strong> Press Enter to send, Shift and Enter for a new line.</span></div>
+  </div>
+  <h3>More channels</h3>
+  <div class="side narrowfig">
+    <figure><img src="shots/browse.jpg" alt=""></figure>
+    <p style="margin-top:0"><strong>Browse channels</strong>, at the bottom of the channel list, shows every channel in the space that you can join, such as groups by city, diagnosis or language. Click <strong>Join</strong> or <strong>Leave</strong>. Some channels are private: Special Minds adds the right people to them.</p>
+  </div>
+</section>
+
+<!-- ============================================================ 5. talking -->
+<section id="c5" class="chapter">
+  <div class="eyebrow">5 · Talking</div>
+  <h2>Talking in a channel</h2>
+  <p class="intro">Write in the box at the bottom of a channel and press Enter. Everyone in the channel sees it straight away.</p>
+  <div class="side wide">
+    <figure><img src="shots/mention.jpg" alt=""><figcaption>Type @ and a few letters of a name.</figcaption></figure>
+    <div>
+      <h3>Mentions</h3>
+      <p>Type <strong>@</strong> and pick a name from the list. That person is told, unless they set that channel's alerts to Nothing.</p>
+      <h3>Photos, files and voice notes</h3>
+      <p>Use the paperclip to add photos or files (up to 4 MB each), and the microphone to record a voice note. Links show a short preview.</p>
+    </div>
+  </div>
+  <h3>Reactions, threads and more</h3>
+  <figure class="full"><img src="shots/hover.jpg" alt=""><figcaption>Point at a message for its buttons: add a reaction, reply in thread, and More.</figcaption></figure>
+  <ul>
+    <li><strong>React</strong> with an emoji instead of writing "thanks" or "agree".</li>
+    <li><strong>Reply in thread</strong> keeps a side conversation together, on the right, without filling the channel. "3 replies" under a message opens it.</li>
+    <li><strong>More</strong> holds Edit and Delete for your own messages, Copy link, and <strong>Report to moderators</strong>. Only Special Minds moderators see reports, and the person isn't told who reported them.</li>
+  </ul>
+  <figure class="full"><img src="shots/thread.jpg" alt=""><figcaption>A thread open beside the channel.</figcaption></figure>
+</section>
+
+<section class="chapter">
+  <div class="eyebrow">5 · Talking</div>
+  <h2>Polls, and when a post waits</h2>
+  <div class="side wide">
+    <figure><img src="shots/poll.jpg" alt=""><figcaption>The chart button turns a message into a poll.</figcaption></figure>
+    <div>
+      <h3 style="margin-top:0">Polls</h3>
+      <p>Write the question, press the <strong>chart button</strong> and add the answers. Choose whether people pick one or several, and when the poll closes. Everyone sees the results as they come in.</p>
+    </div>
+  </div>
+  <h3>Why a post might wait, or not go</h3>
+  <p>Each channel has its own rules, set by Special Minds. If one stops your post, the community tells you why.</p>
+  <table>
+    <tr><th style="width:34%">You see</th><th>What it means</th></tr>
+    <tr><td><span class="pill p-amber">Waiting for a moderator</span></td><td>In some channels, new members' posts (and in a few, every post) are checked before others see them. Usually within the day.</td></tr>
+    <tr><td><span class="pill p-amber">Held for review</span></td><td>It has a phone number, an email, or a word on the watch list. A moderator looks before it appears.</td></tr>
+    <tr><td><strong>Slow mode</strong></td><td>One post every so often, to keep a busy channel calm.</td></tr>
+    <tr><td><strong>Posting hours</strong></td><td>Some channels only take posts at certain times, such as 7 am to 11 pm. You can still read.</td></tr>
+    <tr><td><strong>Only staff post here</strong></td><td>Announcements, or a channel locked for a while. You can still react, and reply where allowed.</td></tr>
+  </table>
+  <div class="note know"><b class="t">Children's privacy</b>Never write a child's full name, school or family details in open channels: use initials and ages. Photos where a child's face can be seen are not allowed, unless a channel says otherwise.</div>
+</section>
+
+<!-- ============================================================ 6. forums -->
+<section id="c6" class="chapter">
+  <div class="eyebrow">6 · Questions</div>
+  <h2>Forums and Ask a specialist</h2>
+  <p class="intro">A forum keeps each question as its own topic with a title, so answers are easy to find months later.</p>
+  <figure class="full"><img src="shots/forum.jpg" alt=""><figcaption>ABA and behaviour, a forum in Specialists · UAE.</figcaption></figure>
+  <ul>
+    <li><strong>New topic</strong> (top right): a clear title, the details, and photos or files if they help.</li>
+    <li><strong>All, No replies yet, Mine</strong> filter the list. Topics without replies are a good place to help.</li>
+    <li>The person who asked, or a moderator, can mark the reply that helped most as the <strong>best answer</strong>. The topic then shows <span class="pill p-moss">Answered</span>.</li>
+  </ul>
+  <figure class="smaller"><img src="shots/topic.jpg" alt=""><figcaption>A topic with its best answer.</figcaption></figure>
+</section>
+
+<section class="chapter">
+  <div class="eyebrow">6 · Questions</div>
+  <h2>Ask a specialist, for families</h2>
+  <p class="intro">In Families · UAE, parents ask questions and verified Special Minds specialists answer.</p>
+  <figure class="full"><img src="shots/ask-list.jpg" alt=""></figure>
+  <div class="side wide">
+    <figure><img src="shots/ask-new.jpg" alt=""><figcaption>A new question, with "Post without my name".</figcaption></figure>
+    <div>
+      <h3 style="margin-top:0">Asking without your name</h3>
+      <p>Tick <strong>Post without my name</strong> and other members see "A parent". Special Minds staff can still see who asked, so they can help.</p>
+      <h3>Not medical advice</h3>
+      <p>Answers come from parents and specialists. For your child's care, speak to their own doctor or therapist.</p>
+      <h3>Case talk, for specialists</h3>
+      <p>Specialists ask each other for ideas in Case talk. Never name a child, a school or a family there. If a post has a word from the caution list, you're reminded before it goes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 7. opportunities -->
+<section id="c7" class="chapter">
+  <div class="eyebrow">7 · New cases</div>
+  <h2>Opportunities, for specialists</h2>
+  <p class="intro">When Special Minds has a new case, it's posted once in an Opportunities channel. The specialists who fit it are alerted, and say "I'm interested" with one tap.</p>
+  <figure class="small"><img src="shots/opps.jpg" alt=""><figcaption>Opportunities · Dubai. "Matches your profile" marks the ones that fit you.</figcaption></figure>
+  <div class="side">
+    <figure><img src="shots/opp-note.jpg" alt=""><figcaption>I'm interested, with a note for Special Minds.</figcaption></figure>
+    <div>
+      <ul>
+        <li><strong>I'm interested:</strong> add a short note if you like, such as when you're free. Only Special Minds staff see who is interested.</li>
+        <li><strong>Not for me:</strong> tells Special Minds it doesn't suit you. You can change your mind.</li>
+        <li><strong>Details:</strong> the full description.</li>
+        <li><strong>Open, I'm interested, Filled</strong> at the top sort them.</li>
+      </ul>
+    </div>
+  </div>
+  <h3>Who is alerted, and what happens next</h3>
+  <p>You're alerted when an opportunity asks for your role, in your city, in a language you speak (and, when the family asks, your gender). If Special Minds shortlists you, you're told <strong>"You're shortlisted"</strong> and they get in touch. When it's filled, everyone interested hears that too.</p>
+  <div class="note tip"><b class="t">Keep your availability up to date</b>In My account → Profile → Availability, switch <strong>I'm open to new cases</strong> on or off and say when you're free. Only Special Minds staff see this, and they look at it first.</div>
+</section>
+
+<!-- ============================================================ 8. events + library -->
+<section id="c8" class="chapter">
+  <div class="eyebrow">8 · Coming up</div>
+  <h2>Events and the library</h2>
+  <p class="intro">Training days, webinars and parents' meetups live in Events channels. Guides and templates live in the Library.</p>
+  <figure class="small"><img src="shots/events.jpg" alt=""><figcaption>Training and events, coming up.</figcaption></figure>
+  <ul>
+    <li><strong>Going, Maybe, Can't go:</strong> tell Special Minds whether to expect you. When places are limited, the count shows.</li>
+    <li><strong>Online events:</strong> the joining link shows once you say you're going.</li>
+    <li><strong>Add to calendar</strong> puts it in your phone or computer calendar.</li>
+    <li><strong>Reminders:</strong> you're reminded a day before (Going or Maybe) and within the hour (Going).</li>
+  </ul>
+  <h3>The library</h3>
+  <figure class="small"><img src="shots/library.jpg" alt=""><figcaption>Resources, the specialists' library.</figcaption></figure>
+  <p>Search, or pick a category such as Visual supports or Data sheets. <strong>Download</strong> a file or <strong>Open</strong> a link. Special Minds adds to the library and keeps it tidy.</p>
+</section>
+
+<!-- ============================================================ 9. families -->
+<section id="c9" class="chapter">
+  <div class="eyebrow">9 · For families</div>
+  <h2>The families' space</h2>
+  <p class="intro">Families · UAE is for parents and carers only, apart from the specialists' spaces. Special Minds moderators look after it.</p>
+  <div class="side">
+    <figure><img src="shots/feed.jpg" alt=""><figcaption>Community feed.</figcaption></figure>
+    <div>
+      <h3 style="margin-top:0">Community feed</h3>
+      <p>Share wins, questions and ideas with other parents, with photos and polls. Like and comment on others' posts.</p>
+      <ul>
+        <li>Please don't share photos where a child's face can be seen.</li>
+        <li>For your first days, your posts are checked by a moderator before others see them.</li>
+        <li>Phone numbers and emails are held for review, to keep everyone safe.</li>
+      </ul>
+      <h3>Groups</h3>
+      <p>Chat with parents who share your situation: Autism, ADHD, Speech delay, Dubai parents, Abu Dhabi parents and Arabic-speaking parents. Join them from Browse channels.</p>
+    </div>
+  </div>
+  <h3>Ask Special Minds for help</h3>
+  <div class="side narrowfig">
+    <figure><img src="shots/help-form.jpg" alt=""></figure>
+    <div>
+      <p style="margin-top:0">Need a shadow teacher, therapy or an assessment? Press <strong>Ask Special Minds for help</strong> at the top of the channel list.</p>
+      <ol class="steps">
+        <li>Choose what you need.</li>
+        <li>Add your child's age, city and a few words, if you like. No need for your child's full name.</li>
+        <li>Check your name and number, and how you'd like to be contacted.</li>
+      </ol>
+      <p>It goes to Special Minds only, not to the community. The team calls or messages you.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 10. messages -->
+<section id="c10" class="chapter">
+  <div class="eyebrow">10 · One to one</div>
+  <h2>Private messages</h2>
+  <p class="intro">Messages are private conversations between two people, or a small group of up to eight.</p>
+  <figure class="full"><img src="shots/dm-list.jpg" alt=""></figure>
+  <div class="side wide">
+    <figure><img src="shots/dm-new.jpg" alt=""><figcaption>New message, as a parent: specialists show "Not allowed".</figcaption></figure>
+    <div>
+      <ol class="steps">
+        <li>Open <strong>Messages</strong> and press <strong>New message</strong>, or press <strong>Message</strong> on someone's profile.</li>
+        <li>Find the people by name and write your first message.</li>
+        <li>Press <strong>Start the conversation</strong>.</li>
+      </ol>
+      <h3>Who can message whom</h3>
+      <p>Specialists can message specialists, and parents can message parents. Messages between a parent and a specialist are <strong>off</strong>: agreements with families go through Special Minds. Special Minds can change this (section 23).</p>
+    </div>
+  </div>
+  <div class="note know"><b class="t">Something wrong?</b>Use More → Report to moderators on any message. Special Minds can stop someone messaging, or remove them from the community.</div>
+</section>
+
+<!-- ============================================================ 11. notifications -->
+<section id="c11" class="chapter">
+  <div class="eyebrow">11 · Staying in touch</div>
+  <h2>Notifications</h2>
+  <p class="intro">The bell holds everything meant for you: mentions, replies, new opportunities that fit you, announcements, event reminders and answers to your requests.</p>
+  <figure class="full"><img src="shots/notifications.jpg" alt=""><figcaption>Notifications. Mark all read clears them.</figcaption></figure>
+  <div class="side">
+    <figure><img src="shots/channel-bell.jpg" alt=""><figcaption>The bell at the top of a channel.</figcaption></figure>
+    <div>
+      <h3 style="margin-top:0">Choose what each channel tells you</h3>
+      <p>Click the bell at the top of a channel and choose <strong>Everything</strong>, <strong>Mentions and replies</strong>, or <strong>Nothing</strong>. A busy chat can be set to mentions and replies, while Announcements and Opportunities tell you everything.</p>
+    </div>
+  </div>
+  <h3>Pop-ups on your phone and computer</h3>
+  <ol class="steps">
+    <li>Open <strong>My account → Notifications</strong> and press <strong>Turn on pop-ups</strong>. Allow notifications when the browser asks.</li>
+    <li>Press <strong>Send a test</strong> to check.</li>
+    <li>Do this once on each phone or computer you use.</li>
+  </ol>
+  <div class="note know"><b class="t">iPhone and iPad</b>First add the community to your Home Screen: in Safari tap Share, then Add to Home Screen. Open it from the Home Screen icon and turn pop-ups on there.</div>
+</section>
+
+<section class="chapter">
+  <div class="eyebrow">11 · Staying in touch</div>
+  <h2>Email, WhatsApp and quiet hours</h2>
+  <div class="side wide">
+    <figure><img src="shots/notify-settings.jpg" alt=""><figcaption>My account → Notifications.</figcaption></figure>
+    <div>
+      <ul>
+        <li><strong>Email me announcements and opportunities I haven't read:</strong> a few hours after they're posted, only if you still haven't seen them.</li>
+        <li><strong>A summary by email:</strong> none, every evening, or every Sunday.</li>
+        <li><strong>WhatsApp:</strong> only for urgent news and opportunities that fit you.</li>
+        <li><strong>Quiet hours:</strong> no pop-ups between the times you choose. Everything still waits in your bell.</li>
+        <li><strong>Notification sound:</strong> pick the sound played while the community is open.</li>
+      </ul>
+      <div class="note tip"><b class="t">Urgent messages</b>Special Minds can mark a broadcast urgent, for example when a centre closes. Urgent ones pop up even during quiet hours.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 12. account -->
+<section id="c12" class="chapter">
+  <div class="eyebrow">12 · You</div>
+  <h2>Search, profiles and your account</h2>
+  <div class="side wide">
+    <figure><img src="shots/search.jpg" alt=""><figcaption>Search finds messages, topics and posts.</figcaption></figure>
+    <div>
+      <h3 style="margin-top:0">Search</h3>
+      <p>The magnifying glass searches every message, topic and post you're allowed to see, in English or Arabic. Click a result to jump to it.</p>
+      <h3>Profiles</h3>
+      <p>Click anyone's name to see their profile: their roles, languages, and a <span class="pill p-moss">Verified</span> badge if Special Minds has checked their qualification. <strong>Message</strong> starts a conversation, where allowed.</p>
+    </div>
+  </div>
+  <figure class="tiny"><img src="shots/member-card.jpg" alt=""><figcaption>A specialist's profile.</figcaption></figure>
+  <h3>My account</h3>
+  <table class="tight">
+    <tr><th style="width:26%">Tab</th><th>What's there</th></tr>
+    <tr><td><strong>Profile</strong></td><td>Photo, full name, the name others see, city, languages, a few words about you. Specialists add roles, skills and availability.</td></tr>
+    <tr><td><strong>Notifications</strong></td><td>Pop-ups, email, WhatsApp, quiet hours and sound (section 11).</td></tr>
+    <tr><td><strong>Sign-in and security</strong></td><td>Your email and number, optional two-step sign-in with an authenticator app, and <strong>Sign out everywhere else</strong> if you lose a phone.</td></tr>
+    <tr><td><strong>Language</strong></td><td>English or <span class="ar">العربية</span>.</td></tr>
+    <tr><td><strong>Your data</strong></td><td>Download everything the community keeps about you, or delete your account.</td></tr>
+  </table>
+</section>
+
+<section class="chapter">
+  <div class="eyebrow">12 · You</div>
+  <h2>Your profile, language and data</h2>
+  <div class="side narrowfig">
+    <figure><img src="shots/account-profile.jpg" alt=""><figcaption>Profile, as a specialist.</figcaption></figure>
+    <div>
+      <h3 style="margin-top:0">For specialists</h3>
+      <p>Your <strong>roles</strong> (shadow teacher, speech and language therapist, BCBA and so on), <strong>city</strong> and <strong>languages</strong> decide which opportunities you're alerted to. Keep them right.</p>
+      <p><strong>Availability</strong> is seen only by Special Minds staff: switch "I'm open to new cases" on, say when you're free, and add a note such as "mornings suit me best".</p>
+      <h3>Your email and number</h3>
+      <p>They're how you sign in, so you can't change them yourself. Ask a Special Minds admin.</p>
+      <h3>Deleting your account</h3>
+      <p>Your data → type DELETE → Delete my account. Your name, contact details and photo go for good. Your posts stay as "Deleted member", unless you tick "Also remove everything I've posted".</p>
+    </div>
+  </div>
+  <h3>In Arabic</h3>
+  <figure class="small"><img src="shots/arabic.jpg" alt=""><figcaption>The families' feed in Arabic: the whole screen turns right to left.</figcaption></figure>
+</section>
+
+<!-- ============================================================ 13. phone -->
+<section id="c13" class="chapter">
+  <div class="eyebrow">13 · On the move</div>
+  <h2>On your phone</h2>
+  <p class="intro">The community works in your phone's browser, with the same address. Add it to your Home Screen and it opens like an app.</p>
+  <figure class="phones">
+    <img src="shots/phone-chat.jpg" alt="">
+    <img src="shots/phone-opps.jpg" alt="">
+    <img src="shots/phone-menu.jpg" alt="">
+    <figcaption>A chat, opportunities, and the menu with your spaces and channels.</figcaption>
+  </figure>
+  <ul>
+    <li>The bar at the bottom: <strong>Home, Messages, Search, Alerts, Me</strong>.</li>
+    <li>The menu button at the top left opens your spaces and channels.</li>
+    <li>The bell at the top right holds your notifications, as on a computer.</li>
+  </ul>
+  <div class="grid2">
+    <div class="note tip"><b class="t">iPhone</b>In Safari, tap Share, then Add to Home Screen. Open it from the new icon, then turn pop-ups on in Me → Notifications.</div>
+    <div class="note tip"><b class="t">Android</b>In Chrome, tap the menu (three dots), then Add to Home screen or Install app.</div>
+  </div>
+</section>
+
+<!-- ============================================================ 14. roles -->
+<section id="c14" class="chapter">
+  <div class="part">Part 2 · For the Special Minds team</div>
+  <div class="eyebrow">14 · Who does what</div>
+  <h2>Owner, admins and moderators</h2>
+  <p class="intro">The Special Minds team runs the community from the <strong>Admin</strong> area: the shield icon in the far-left strip. Each person sees only the pages their role allows.</p>
+  <table class="roles tight">
+    <tr><th>What</th><th>Owner</th><th>Admin</th><th>Moderator</th></tr>
+    <tr><td>Post anywhere in their spaces, and pin, close or remove posts</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+    <tr><td>Moderation queue, reports and flagged posts</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+    <tr><td>Join requests, invites and members (pause, suspend, ban)</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+    <tr><td>Help requests and scheduled posts</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+    <tr><td>Opportunities: post, shortlist, mark as filled</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+    <tr><td>Broadcasts</td><td class="y">Yes</td><td class="y">Yes</td><td></td></tr>
+    <tr><td>Import from Talent</td><td class="y">Yes</td><td class="y">Yes</td><td></td></tr>
+    <tr><td>Spaces and channels, blocked words, settings</td><td class="y">Yes</td><td class="y">Yes</td><td></td></tr>
+    <tr><td>Delivery log, audit log and downloads</td><td class="y">Yes</td><td class="y">Yes</td><td></td></tr>
+    <tr><td>Make or remove moderators</td><td class="y">Yes</td><td class="y">Yes</td><td></td></tr>
+    <tr><td>Make or remove admins</td><td class="y">Yes</td><td></td><td></td></tr>
+  </table>
+  <div class="side slim">
+    <figure><img src="shots/moderator-menu.jpg" alt=""><figcaption>A moderator's Admin menu.</figcaption></figure>
+    <div>
+      <h3 style="margin-top:0">The rules that always apply</h3>
+      <ul>
+        <li><strong>Moderators look after their own spaces:</strong> the spaces they're a member of.</li>
+        <li><strong>Nobody can change their own role.</strong></li>
+        <li><strong>Only the owner</strong> makes or removes admins.</li>
+        <li><strong>The owner's account can't be changed in the app.</strong> Handing the community to a new owner is done by Special Minds' developer.</li>
+        <li><strong>Everything staff do is logged</strong> in the audit log (section 23).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 15. admin area -->
+<section id="c15" class="chapter">
+  <div class="eyebrow">15 · The admin area</div>
+  <h2>The admin area and first-time setup</h2>
+  <p class="intro">Overview shows how the community is doing and what needs you today.</p>
+  <figure class="full"><img src="shots/admin-overview.jpg" alt=""><figcaption>Admin → Overview.</figcaption></figure>
+  <p>The numbers at the top show the community at a glance and what needs you today: join requests, posts waiting for review, help requests and events coming up. Below are the latest opportunities (how many saw them and how many are interested) and what the team did recently.</p>
+  <h3>First-time setup</h3>
+  <div class="flow">
+    <div><b>1. Settings</b>Messaging rules, who sees who's interested</div>
+    <div><b>2. Spaces</b>Names, rules and the questions for families</div>
+    <div><b>3. Channels</b>Check each one's rules and permissions</div>
+    <div><b>4. Team</b>Make your moderators</div>
+    <div class="on"><b>5. Specialists</b>Import from Talent, send invites</div>
+    <div><b>6. Families</b>Share the join link and QR code</div>
+  </div>
+  <div class="note tip"><b class="t">Start small</b>Invite the specialists first and let them settle in for a week. Then open the families' space, for example with a QR code at the next parents' event.</div>
+</section>
+
+<!-- ============================================================ 16. invites -->
+<section id="c16" class="chapter">
+  <div class="eyebrow">16 · Bringing people in</div>
+  <h2>Inviting people</h2>
+  <p class="intro">Admin → Invites makes links and QR codes: one shared link for a WhatsApp group or an event, or a personal link for one person.</p>
+  <div class="side wide">
+    <figure><img src="shots/invite-make.jpg" alt=""><figcaption>Make an invite.</figcaption></figure>
+    <div>
+      <ul>
+        <li><strong>Space</strong> and <strong>They join as</strong>: specialist, parent or carer, Special Minds team, or guest.</li>
+        <li><strong>Also add them to</strong> private channels, such as Shadow teachers.</li>
+        <li><strong>For one person:</strong> their email or mobile and name. Leave it empty for a shared link anyone can use.</li>
+        <li><strong>How many people can use it</strong> and <strong>when it expires</strong>.</li>
+        <li><strong>Let them straight in:</strong> off, and their request waits in Join requests.</li>
+        <li><strong>Send it to them now</strong> by email, or WhatsApp for a mobile number (personal invites only).</li>
+      </ul>
+    </div>
+  </div>
+  <figure class="full"><img src="shots/invite-links.jpg" alt=""><figcaption>Shared links with their QR codes, and personal invites. Copy link, or Switch off a link at any time.</figcaption></figure>
+</section>
+
+<section class="chapter">
+  <div class="eyebrow">16 · Bringing people in</div>
+  <h2>Importing specialists from Talent</h2>
+  <p class="intro">Admin → Import from Talent turns a Talent portal export into personal invites, with each person's role, city, languages and Talent number already filled in.</p>
+  <figure class="small"><img src="shots/import.jpg" alt=""><figcaption>A Talent export read and checked, before any invites are made. These people are made up.</figcaption></figure>
+  <ol class="steps">
+    <li>In the Talent portal: <strong>Candidates</strong> → filter → <strong>Export</strong>.</li>
+    <li>Here: choose the file. Name, Email, WhatsApp/Phone, Role, City, Languages and Ref are read.</li>
+    <li>Check the list, choose the space, and whether to <strong>send each person their invite now</strong>.</li>
+    <li>Each person confirms their email or phone with a code, and they're in with their profile ready.</li>
+  </ol>
+  <div class="note admin"><b class="t">Talent numbers</b>The Talent number shows on the member's page in Admin, so the team can match them to their Talent profile. Members never see it.</div>
+</section>
+
+<!-- ============================================================ 17. members -->
+<section id="c17" class="chapter">
+  <div class="eyebrow">17 · People</div>
+  <h2>Join requests and members</h2>
+  <h3 style="margin-top:0">Join requests</h3>
+  <figure class="full"><img src="shots/requests.jpg" alt=""><figcaption>Admin → Join requests, with each family's answers.</figcaption></figure>
+  <p>Read the answers, then <strong>Approve</strong> or <strong>Decline</strong>. The person is told either way. Moderators see the requests for their own spaces.</p>
+  <h3>Members</h3>
+  <figure class="full"><img src="shots/members.jpg" alt=""><figcaption>Admin → Members. Search by name, email or number, and filter by space, kind and status.</figcaption></figure>
+</section>
+
+<section class="chapter">
+  <div class="eyebrow">17 · People</div>
+  <h2>A member's page</h2>
+  <figure class="full"><img src="shots/member-controls.jpg" alt=""><figcaption>Their profile on the left, the controls on the right.</figcaption></figure>
+  <table class="tight">
+    <tr><th style="width:28%">Control</th><th>What it does</th></tr>
+    <tr><td><strong>Spaces</strong></td><td>Add them to a space, or take them out of one.</td></tr>
+    <tr><td><strong>Pause their posting</strong></td><td>For 1 day to 30 days, with a reason they see. They can still read.</td></tr>
+    <tr><td><strong>Suspend</strong></td><td>They're signed out and can't sign in until you reinstate them.</td></tr>
+    <tr><td><strong>Ban</strong></td><td>They're signed out, and their email and number can't join again.</td></tr>
+    <tr><td><strong>Verified badge</strong></td><td>For example "Verified BCBA", once you've checked their qualification.</td></tr>
+    <tr><td><strong>Staff role</strong></td><td>Moderator, Admin or Not staff. Only the owner makes admins.</td></tr>
+    <tr><td><strong>History</strong></td><td>Every staff action on this person.</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ 18. spaces -->
+<section id="c18" class="chapter">
+  <div class="eyebrow">18 · The shape of it</div>
+  <h2>Spaces and channels</h2>
+  <p class="intro">Admin → Spaces and channels. A space is a separate community with its own members, channels and rules. Make a new one for another country or group.</p>
+  <figure class="full"><img src="shots/spaces.jpg" alt=""></figure>
+  <div class="side">
+    <figure><img src="shots/space-settings.jpg" alt=""><figcaption>A space's settings.</figcaption></figure>
+    <div>
+      <ul>
+        <li><strong>Who it's for:</strong> specialists, families or everyone.</li>
+        <li><strong>How people join:</strong> invite link only; ask to join, an admin approves; or anyone signed in can join.</li>
+        <li><strong>Questions for people joining:</strong> one per line. End a line with * to make it required.</li>
+        <li><strong>Community rules,</strong> in English and Arabic, shown to everyone joining.</li>
+        <li><strong>Hold phone numbers and emails for review</strong> stops members swapping contact details without a moderator seeing it first.</li>
+        <li><strong>Switched on:</strong> off hides the whole space.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="chapter">
+  <div class="eyebrow">18 · The shape of it</div>
+  <h2>A channel's settings</h2>
+  <div class="side">
+    <figure><img src="shots/channel-settings.jpg" alt=""><figcaption>Autism, in Families · UAE.</figcaption></figure>
+    <div>
+      <h3 style="margin-top:0">Right now</h3>
+      <p><strong>Lock now</strong> and <strong>Staff only for now</strong> are quick switches for a heated moment. <strong>Archive</strong> puts a channel away.</p>
+      <h3>Who sees it</h3>
+      <p><strong>Open:</strong> everyone in the space can find and join it. <strong>Private:</strong> listed, but only the people you add can read it. <strong>Hidden:</strong> only its members know it's there. Open channels can add everyone automatically.</p>
+      <h3>What members may do</h3>
+      <p>A grid of See, Post, Reply, React and Upload for specialists, parents and guests. Staff can always do everything.</p>
+      <h3>When and how</h3>
+      <ul>
+        <li><strong>Posting hours,</strong> on the space's own clock.</li>
+        <li><strong>Slow mode:</strong> one post every 30 seconds to one an hour.</li>
+        <li><strong>Posts wait for a moderator:</strong> never, from new members, or every post.</li>
+        <li><strong>Locked</strong> or <strong>Staff only post</strong>.</li>
+        <li><strong>Allow posting without a name</strong> (shown as "A parent").</li>
+        <li><strong>Children's photos allowed:</strong> off asks people to confirm no child's face can be seen.</li>
+        <li><strong>Case discussion rules:</strong> a reminder, and a check for caution words.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 19. opportunities -->
+<section id="c19" class="chapter">
+  <div class="eyebrow">19 · New cases</div>
+  <h2>Posting an opportunity</h2>
+  <p class="intro">In an Opportunities channel, press <strong>New opportunity</strong>. It's posted once and only the specialists who fit are alerted. Their answers come back to you.</p>
+  <div class="side">
+    <figure><img src="shots/opp-new.jpg" alt=""><figcaption>New opportunity.</figcaption></figure>
+    <div>
+      <ul>
+        <li><strong>Role</strong> and <strong>city</strong> are needed. Add the area, start date, days and hours, the child's age and needs, and the languages.</li>
+        <li><strong>Specialist:</strong> anyone, female or male, when the family asks.</li>
+        <li><strong>Headline:</strong> left empty, it's made from the role and area.</li>
+        <li><strong>Pay</strong> is seen by staff only.</li>
+        <li><strong>Nudge on WhatsApp</strong> reminds matching specialists who haven't opened it after 2 hours.</li>
+        <li><strong>Check who matches</strong> shows how many specialists fit before you post. <strong>Post it later</strong> picks a time.</li>
+        <li>Never put the child's name or the family's details in it.</li>
+      </ul>
+      <h3>Who is alerted</h3>
+      <p>Active specialists in the space with that role, in that city, who speak one of the languages, and of the gender asked for. If the channel is private, only its members.</p>
+      <div class="note know"><b class="t">Profiles decide the match</b>A specialist with no city or role on their profile won't be alerted. Importing from Talent fills these in.</div>
+    </div>
+  </div>
+</section>
+
+<section class="chapter">
+  <div class="eyebrow">19 · New cases</div>
+  <h2>Choosing people</h2>
+  <p class="intro">Open the opportunity: the <strong>Responses</strong> card below it is for staff only.</p>
+  <figure class="small"><img src="shots/opp-responses.jpg" alt=""><figcaption>Responses for Shadow teacher · Al Barsha, Dubai.</figcaption></figure>
+  <table class="tight">
+    <tr><th style="width:30%">You see</th><th>Meaning</th></tr>
+    <tr><td><strong>Matched and alerted</strong></td><td>Specialists who fit and were told.</td></tr>
+    <tr><td><strong>Seen it</strong></td><td>How many of them have opened it.</td></tr>
+    <tr><td><strong>Interested, Not for me, Haven't seen it</strong></td><td>The three lists of people, with their roles, city, languages, availability and note.</td></tr>
+    <tr><td><strong>Shortlist</strong></td><td>They're told "You're shortlisted". Undo shortlist takes it back.</td></tr>
+    <tr><td><strong>Not this time, Message</strong></td><td>Pass on someone, or message them.</td></tr>
+    <tr><td><strong>Mark as filled</strong></td><td>Everyone interested who isn't shortlisted is told it's filled. Reopen if it falls through.</td></tr>
+  </table>
+  <div class="note admin"><b class="t">Talent portal</b>Once the Talent portal link is connected, <strong>Send shortlist to Talent</strong> passes the shortlisted people across. Until then it shows "Talent portal link: off".</div>
+</section>
+
+<!-- ============================================================ 20. broadcasts -->
+<section id="c20" class="chapter">
+  <div class="eyebrow">20 · Telling everyone</div>
+  <h2>Broadcasts and scheduled posts</h2>
+  <p class="intro">A broadcast is one message to a chosen group: in their bell, as a pop-up, and by email or WhatsApp if you choose. Use it for news that matters, such as a centre closing.</p>
+  <div class="side">
+    <figure><img src="shots/broadcast-new.jpg" alt=""><figcaption>Admin → Broadcasts → New broadcast.</figcaption></figure>
+    <div>
+      <ul>
+        <li><strong>Who gets it:</strong> pick spaces and groups (specialists, parents, the Special Minds team), or narrow it by city, role or language. Leave a group empty for everyone.</li>
+        <li><strong>How:</strong> always in the bell and as a pop-up; also by email; also on WhatsApp.</li>
+        <li><strong>Urgent</strong> pops up even during people's quiet hours. Keep it for real emergencies.</li>
+        <li><strong>Send later</strong> picks a time.</li>
+        <li>Check how many people it reaches before sending.</li>
+      </ul>
+    </div>
+  </div>
+  <figure class="full"><img src="shots/broadcast-seen.jpg" alt=""><figcaption>After sending: how many saw it, and who hasn't yet.</figcaption></figure>
+</section>
+
+<section class="chapter">
+  <div class="eyebrow">20 · Telling everyone</div>
+  <h2>Scheduled posts and announcements</h2>
+  <p>Staff see a calendar button, <strong>Post later</strong>, in the message box and on new events and library items. Admin → Scheduled posts lists everything waiting, with <strong>Post now</strong> and <strong>Cancel</strong>.</p>
+  <figure class="full"><img src="shots/scheduled.jpg" alt=""></figure>
+  <div class="note know"><b class="t">When they go out</b>Scheduled posts go out within a minute of their time while anyone has the community open. If nobody does, they go out as soon as someone opens it, and at the latest at the daily check at 6 pm UAE time.</div>
+  <h3>Announcements</h3>
+  <ul>
+    <li>Post news in each space's Announcements channel. Everyone in the space is in it.</li>
+    <li><strong>Pin to the top</strong> (More on the message) keeps an important post in view.</li>
+    <li>Staff see <strong>Seen by</strong> under each announcement.</li>
+    <li>People who haven't read an announcement get an email after a few hours, if they asked for it.</li>
+    <li><strong>Close replies</strong> on a post when the conversation is done.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ 21. safety -->
+<section id="c21" class="chapter">
+  <div class="eyebrow">21 · Safety</div>
+  <h2>Keeping it safe</h2>
+  <p class="intro">Admin → Moderation is where held posts, reports and flagged posts wait for a person to decide.</p>
+  <figure class="full"><img src="shots/moderation.jpg" alt=""><figcaption>Posts waiting for review, with the reason each one was held.</figcaption></figure>
+  <table class="tight">
+    <tr><th style="width:24%">Tab</th><th>What to do</th></tr>
+    <tr><td><strong>Waiting</strong></td><td>Posts held for a reason: a new member, contact details, a blocked word, or a channel where every post is checked. <strong>Approve</strong>, or <strong>Reject</strong> with a reason the author sees.</td></tr>
+    <tr><td><strong>Reports</strong></td><td>Posts members reported. <strong>Remove the post</strong> (with a reason) or <strong>Keep it</strong>.</td></tr>
+    <tr><td><strong>Flagged</strong></td><td>Posts with a caution word that went out anyway. <strong>Looks fine</strong> clears the flag.</td></tr>
+    <tr><td><strong>Message requests</strong></td><td>First messages between a parent and a specialist, when Settings say an admin approves them.</td></tr>
+  </table>
+  <p>You can also remove any post straight away: More → Remove, with a reason. The author is told.</p>
+</section>
+
+<section class="chapter">
+  <div class="eyebrow">21 · Safety</div>
+  <h2>Blocked words</h2>
+  <div class="side wide">
+    <figure><img src="shots/words.jpg" alt=""><figcaption>Admin → Blocked words.</figcaption></figure>
+    <div>
+      <p style="margin-top:0">Add words and phrases in any language, and choose what happens:</p>
+      <ul>
+        <li><span class="pill p-red">Blocked</span> the post can't be sent.</li>
+        <li><span class="pill p-amber">Held for review</span> it waits in Moderation.</li>
+        <li><span class="pill p-brand">Caution in case talk</span> a reminder in case discussion channels, and a flag for staff.</li>
+      </ul>
+      <p>Phone numbers and emails are caught automatically in spaces that hold contact details.</p>
+    </div>
+  </div>
+  <h3>When someone breaks the rules</h3>
+  <ol class="steps">
+    <li><strong>Remove the post</strong> with a short, kind reason.</li>
+    <li><strong>Pause their posting</strong> for a day or a week if it happens again (section 17).</li>
+    <li><strong>Suspend</strong> while you talk to them, or <strong>ban</strong> if they must not come back.</li>
+  </ol>
+  <div class="note admin"><b class="t">Reports are confidential</b>The person reported is never told who reported them. Look at each report the same day: members are told a moderator will.</div>
+</section>
+
+<!-- ============================================================ 22. help requests -->
+<section id="c22" class="chapter">
+  <div class="eyebrow">22 · Families asking for help</div>
+  <h2>Help requests</h2>
+  <p class="intro">When a parent presses "Ask Special Minds for help", the request lands in Admin → Help requests, and the team is told.</p>
+  <figure class="full"><img src="shots/help-admin.jpg" alt=""><figcaption>Admin → Help requests.</figcaption></figure>
+  <ul>
+    <li>Each request shows what they need, their child's age, city and area, their words, and how they'd like to be contacted.</li>
+    <li>Call or message them, then press <strong>Mark as handled</strong>. <strong>Reopen</strong> brings one back.</li>
+    <li>Once the CRM link is connected, each request also becomes a lead in the Special Minds CRM, like a website enquiry, and <strong>Send to the CRM</strong> retries one that didn't go.</li>
+  </ul>
+  <div class="note know"><b class="t">The CRM link is off for now</b>Until it's connected, follow up from this page. The request is only in the community.</div>
+</section>
+
+<!-- ============================================================ 23. settings -->
+<section id="c23" class="chapter">
+  <div class="eyebrow">23 · The whole community</div>
+  <h2>Settings and connections</h2>
+  <div class="side">
+    <figure><img src="shots/settings.jpg" alt=""><figcaption>Admin → Settings.</figcaption></figure>
+    <div>
+      <table class="tight">
+        <tr><th>Setting</th><th style="width:30%">Starts as</th></tr>
+        <tr><td>Private messages between a parent and a specialist</td><td>Off</td></tr>
+        <tr><td>Parents can message other parents</td><td>On</td></tr>
+        <tr><td>Specialists can message other specialists</td><td>On</td></tr>
+        <tr><td>Hold phone numbers and emails in parent–specialist messages</td><td>On</td></tr>
+        <tr><td>Staff must use two-step sign-in</td><td>Off</td></tr>
+        <tr><td>Who sees who's interested in an opportunity</td><td>Staff only</td></tr>
+        <tr><td>Members count as new for</td><td>7 days</td></tr>
+        <tr><td>Email unread announcements after</td><td>4 hours</td></tr>
+        <tr><td>WhatsApp nudge for unopened opportunities after</td><td>2 hours</td></tr>
+        <tr><td>Digests go out at</td><td>6 pm, each person's clock</td></tr>
+        <tr><td>Phone numbers without a country code are read as</td><td>UAE (+971)</td></tr>
+      </table>
+      <h3>Connections</h3>
+      <p>The bottom of Settings shows which outside services are connected: pop-ups, email, WhatsApp, the CRM, the Talent portal and the daily scheduler. They're set up on the hosting, not in the app.</p>
+    </div>
+  </div>
+</section>
+
+<section class="chapter">
+  <div class="eyebrow">23 · The whole community</div>
+  <h2>Delivery log, audit log and downloads</h2>
+  <figure class="small"><img src="shots/outbox.jpg" alt=""><figcaption>Admin → Delivery log.</figcaption></figure>
+  <p><strong>Delivery log</strong> lists every email and WhatsApp message the community sends: sign-in codes (the code itself is never kept), invites, digests, nudges and broadcasts. "Simulated" means it wasn't sent because that service isn't connected.</p>
+  <figure class="small"><img src="shots/audit.jpg" alt=""><figcaption>Admin → Audit log.</figcaption></figure>
+  <p><strong>Audit log</strong> shows who did what and when: sign-ins, removals, bans, setting changes and downloads.</p>
+  <div class="side wide">
+    <figure><img src="shots/downloads.jpg" alt=""></figure>
+    <p style="margin-top:0"><strong>Downloads</strong>, at the bottom of Overview: members, opportunity answers, event RSVPs and help requests, as spreadsheets. Each download is written in the audit log, because they hold personal details.</p>
+  </div>
+</section>
+
+<!-- ============================================================ 24. before inviting -->
+<section id="c24" class="chapter">
+  <div class="eyebrow">24 · Going live</div>
+  <h2>Before you invite everyone</h2>
+  <p class="intro">The community is live at community.specialminds.app with its spaces and channels ready, and no members yet apart from the team. Do these first.</p>
+  <ul class="check">
+    <li><strong>Connect email.</strong> Add the Resend key and a sending address on the hosting, so sign-in codes reach people. Until then nobody else can sign in.</li>
+    <li><strong>Decide on WhatsApp.</strong> Codes and alerts on WhatsApp need a Meta WhatsApp Business account and approved message templates. Email alone is enough to start.</li>
+    <li><strong>Check where families' data may be kept.</strong> The database is in Frankfurt. Confirm this is acceptable for UAE families before they join.</li>
+    <li><strong>Plan for storage.</strong> Photos and files are kept in the database, and the free plan holds 0.5 GB. Upgrade before families share many photos.</li>
+    <li><strong>Make your moderators</strong> and agree who looks at Moderation each day.</li>
+    <li><strong>Read every space's rules and questions,</strong> and each channel's settings, in English and Arabic.</li>
+    <li><strong>Try it on the preview</strong> as a specialist, a parent and an admin.</li>
+  </ul>
+  <h3>Your first week</h3>
+  <ol class="steps">
+    <li><strong>Day 1:</strong> import the specialists from Talent and send their invites. Post a welcome in Announcements.</li>
+    <li><strong>Days 2 to 5:</strong> post real opportunities, answer questions quickly, and verify the BCBAs and therapists.</li>
+    <li><strong>Day 6 or 7:</strong> open Families · UAE with a shared link or QR code. Approve requests the same day.</li>
+  </ol>
+  <div class="note tip"><b class="t">Help people turn on pop-ups</b>Most of the value is in being told: new cases, replies, events. In your welcome post, ask everyone to turn pop-ups on (section 11) and iPhone users to add the community to their Home Screen first.</div>
+</section>
+
+<!-- ============================================================ 25. faq -->
+<section id="c25" class="chapter faq">
+  <div class="eyebrow">25 · Questions</div>
+  <h2>Questions people ask</h2>
+  <div class="qa">
+    <div class="q"><h3>I didn't get my code.</h3><p>Wait a minute and check your spam folder. Make sure you typed the email or number you joined with. Codes work for 10 minutes; ask for a new one if it ran out.</p></div>
+    <div class="q"><h3>Is there an app to download?</h3><p>No download is needed. Open community.specialminds.app and add it to your Home Screen (section 13).</p></div>
+    <div class="q"><h3>Who can see what I post?</h3><p>The members of that channel. Private channels are seen only by their members, and the families' space is separate from the specialists' spaces.</p></div>
+    <div class="q"><h3>Can a parent message me privately?</h3><p>Not unless Special Minds changes the setting. Agreements with families go through Special Minds.</p></div>
+    <div class="q"><h3>Who sees that I'm interested in an opportunity?</h3><p>Only Special Minds staff. Other specialists don't see your name.</p></div>
+    <div class="q"><h3>Why is my post waiting for a moderator?</h3><p>New members' first posts, posts with a phone number or email, and some channels are checked first. It usually appears within the day.</p></div>
+    <div class="q"><h3>Why can't I post in this channel?</h3><p>It may be an announcements channel, outside its posting hours, in slow mode, or locked for a while. You can still read and react.</p></div>
+    <div class="q"><h3>How do I switch to Arabic?</h3><p>My account → Language, or the <span class="ar">العربية</span> button on the sign-in page.</p></div>
+    <div class="q"><h3>How do I stop pop-ups at night?</h3><p>Turn on quiet hours in My account → Notifications. Urgent messages from Special Minds still come through.</p></div>
+    <div class="q"><h3>I have a new phone number or email.</h3><p>Ask a Special Minds admin to change it. It's how you sign in, so you can't change it yourself.</p></div>
+    <div class="q"><h3>I lost my phone.</h3><p>Sign in on another device and use Sign out everywhere else (My account → Sign-in and security).</p></div>
+    <div class="q"><h3>How do I leave a channel?</h3><p>Click the channel's name at the top and choose Leave channel, or use Browse channels.</p></div>
+    <div class="q"><h3>Someone is being unkind.</h3><p>Use More → Report to moderators on the message. They won't know it was you.</p></div>
+    <div class="q"><h3>How do I delete my account?</h3><p>My account → Your data. You can also download everything the community keeps about you.</p></div>
+    <div class="q"><h3>For the team: a specialist isn't getting opportunity alerts.</h3><p>Check their profile has the right role, city and languages, that they're in the space, and that they're active.</p></div>
+    <div class="q"><h3>For the team: how do I remove someone?</h3><p>Open them in Admin → Members: pause their posting, suspend or ban (section 17). Remove their posts from each post's More menu.</p></div>
+    <div class="q"><h3>For the team: can we undo a ban?</h3><p>Yes. Open the member and reinstate them. Their email and number can join again.</p></div>
+    <div class="q"><h3>For the team: who do we ask about the hosting?</h3><p>Email, WhatsApp, the CRM and Talent links, and a new owner are set up by Special Minds' developer, not in the app.</p></div>
+  </div>
+</section>
+
+</body>
+</html>
