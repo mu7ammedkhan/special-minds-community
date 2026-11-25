@@ -4,7 +4,7 @@ import { demoSignIn } from "@/app/actions/auth";
 import { AuthShell } from "@/components/auth-shell";
 import { LoginForm } from "@/components/login-form";
 import { Avatar } from "@/components/ui";
-import { demoLoginsEnabled, DEMO_DOMAIN, getMe } from "@/lib/auth";
+import { demoLoginsEnabled, DEMO_DOMAIN, getPendingMe, safeNext } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { getT } from "@/lib/i18n/server";
 import { KIND_LABEL, STAFF_LABEL, type Kind, type StaffRole } from "@/lib/options";
@@ -12,10 +12,11 @@ import { KIND_LABEL, STAFF_LABEL, type Kind, type StaffRole } from "@/lib/option
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Sign in" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; link?: string; deleted?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; link?: string; deleted?: string; mfa?: string }> }) {
   const sp = await searchParams;
-  const me = await getMe();
-  if (me) redirect(sp.next?.startsWith("/") ? sp.next : "/");
+  const me = await getPendingMe();
+  if (me && me.totpOn && !me.mfaOk) redirect(`/mfa?next=${encodeURIComponent(safeNext(sp.next))}`);
+  if (me) redirect(safeNext(sp.next));
   const { t, locale } = await getT();
   const demo = demoLoginsEnabled()
     ? await query<{ id: number; full_name: string; email: string; kind: Kind; staff_role: StaffRole | null; status: string; city: string | null }>(
@@ -28,6 +29,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <p className="mt-1.5 text-base text-soft">{t("Specialists and families, together. Sign in or join with your email or mobile number.")}</p>
       {sp.link && <p role="alert" className="mt-4 rounded-xl bg-apricot-50 px-4 py-3 text-sm text-caution">{t("That sign-in link has expired or was already used. Sign in with your email or mobile number instead.")}</p>}
       {sp.deleted && <p role="status" className="mt-4 rounded-xl bg-moss-50 px-4 py-3 text-sm text-moss">{t("Your account has been deleted.")}</p>}
+      {sp.mfa && <p role="alert" className="mt-4 rounded-xl bg-apricot-50 px-4 py-3 text-sm text-caution">{t("Too many wrong authenticator codes, so you were signed out. Sign in again with a new code.")}</p>}
       <div className="mt-6"><LoginForm next={sp.next ?? "/"} /></div>
       <p className="mt-5 text-center text-sm text-soft">{t("New here?")} <a href="/join" className="font-semibold text-brand hover:text-brand-deep">{t("Ask to join")}</a></p>
       {demo.length > 0 && (

@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/auth-shell";
 import { MfaForm } from "@/components/mfa-form";
-import { getMe } from "@/lib/auth";
+import { getPendingMe } from "@/lib/auth";
 import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function MfaPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  const me = await getMe();
+  const me = await getPendingMe();
   if (!me) redirect("/login");
   if (!me.totpOn || me.mfaOk) redirect("/");
   const { t, locale } = await getT();

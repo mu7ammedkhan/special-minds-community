@@ -32,7 +32,18 @@ export async function tick(force = false): Promise<Record<string, number> | null
   await step("emails", importantEmails);
   await step("digests", digests);
   await step("pushes", flushPushes);
+  await step("files", looseFiles);
   return out;
+}
+
+/** Files uploaded but never posted (or kept as a profile photo) go after a day, so they can't fill the database. */
+async function looseFiles() {
+  const gone = await query<{ id: number }>(
+    `delete from files f where f.created_at < now() - interval '1 day'
+        and not exists (select 1 from post_files pf where pf.file_id = f.id)
+        and not exists (select 1 from members m where m.avatar_file_id = f.id)
+      returning f.id`);
+  return gone.length;
 }
 
 async function publishScheduled() {

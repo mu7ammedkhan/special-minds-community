@@ -2,14 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { atLeast, readAddress, requireStaff } from "@/lib/auth";
+import { atLeast, endAllSessions, isAdmin, readAddress, requireStaff, type Me } from "@/lib/auth";
 import { canModerate } from "@/lib/access";
 import { audit } from "@/lib/audit";
 import { createBroadcast, countSegment, type Segment } from "@/lib/broadcasts";
 import { sendHelpToCrm } from "@/lib/crm";
 import { one, query, transaction } from "@/lib/db";
 import { makeT } from "@/lib/i18n";
-import { addToSpace, decideRequest, inviteCode, muteMember, removeFromSpace, setStaffRole, setStatus, setVerified } from "@/lib/members";
+import { addToSpace, decideRequest, inviteCode, memberInScope, muteMember, removeFromSpace, setStaffRole, setStatus, setVerified } from "@/lib/members";
 import { COUNTRY, defaultNotify, defaultPerms, rolesFromText, tzFor, type ChannelType, type Kind, type PermAudience, type Perms } from "@/lib/options";
 import { sendEmail, sendWhatsApp } from "@/lib/outbox";
 import { fanOut, removePost } from "@/lib/posts";
@@ -70,6 +70,8 @@ async function sendInvite(address: string, name: string, link: string, _by: numb
 
 export async function revokeInvite(id: number) {
   const me = await requireStaff("moderator");
+  const inv = await one<{ space_id: number }>(`select space_id from invites where id = $1`, [Number(id)]);
+  if (!inv || !canModerate(me, Number(inv.space_id))) return;
   await query(`update invites set revoked_at = now() where id = $1`, [id]);
   await audit(me, "invite.revoke", `invite:${id}`);
   revalidatePath("/admin/invites");
@@ -106,16 +108,26 @@ export async function importSpecialists(rows: ImportRow[], spaceId: number, send
 
 // ---------------------------------------------------------------- members ----
 
-/** Nobody acts on themselves or the owner; only the owner acts on admins; moderators never act on other staff. */
-async function targetCheck(me: { id: number; staff: string | null }, id: number) {
+/**
+ * Nobody acts on themselves or the owner; only the owner acts on admins;
+ * moderators never act on other staff, and only on people in their own spaces.
+ */
+async function targetCheck(me: Me, id: number) {
+  id = Number(id);
   const target = await one<{ staff_role: string | null }>(`select staff_role from members where id = $1`, [id]);
   if (!target || id === me.id || target.staff_role === "owner") return false;
   if (target.staff_role && me.staff !== "owner" && !(me.staff === "admin" && target.staff_role === "moderator")) return false;
-  return true;
+  return memberInScope(me, id);
 }
 
+const STATUSES = ["active", "suspended", "banned"] as const;
+
 export async function memberStatusAction(id: number, status: "active" | "suspended" | "banned", reason: string | null) {
-  const me = await requireStaff(status === "banned" ? "admin" : "moderator");
+  if (!STATUSES.includes(status)) return false;
+  const target = await one<{ status: string }>(`select status from members where id = $1`, [Number(id)]);
+  // A deleted account stays deleted; banning and lifting a ban are for admins.
+  if (!target || target.status === "deleted") return false;
+  const me = await requireStaff(status === "banned" || target.status === "banned" ? "admin" : "moderator");
   if (!(await targetCheck(me, id))) return false;
   await setStatus(me, Number(id), status, reason);
   revalidatePath(`/admin/members/${id}`);
@@ -132,7 +144,13 @@ export async function muteAction(id: number, hours: number | null, reason: strin
 
 export async function spaceMembershipAction(id: number, spaceId: number, add: boolean) {
   const me = await requireStaff("moderator");
-  if (!canModerate(me, spaceId)) return false;
+  if (!canModerate(me, Number(spaceId))) return false;
+  // Adding people to your own space is fine; taking someone out follows the same rules as suspending them.
+  if (!add && !(await targetCheck(me, id))) return false;
+  if (add) {
+    const target = await one<{ staff_role: string | null; status: string }>(`select staff_role, status from members where id = $1`, [Number(id)]);
+    if (!target || target.status === "deleted" || (target.staff_role && !isAdmin(me))) return false;
+  }
   if (add) { await addToSpace(null, Number(id), Number(spaceId)); await audit(me, "member.add_to_space", `member:${id}`, { space: spaceId }); }
   else await removeFromSpace(me, Number(id), Number(spaceId));
   revalidatePath(`/admin/members/${id}`);
@@ -148,6 +166,7 @@ export async function staffRoleAction(id: number, role: "owner" | "admin" | "mod
 
 export async function verifyAction(id: number, title: string | null) {
   const me = await requireStaff("admin");
+  if (!(await targetCheck(me, id))) return;
   await setVerified(me, Number(id), title ? String(title).slice(0, 60) : null);
   revalidatePath(`/admin/members/${id}`);
 }
@@ -162,12 +181,18 @@ export async function memberDetailsAction(_prev: ActionState, fd: FormData): Pro
   if (emailRaw && email?.channel !== "email") return { fields: { email: t("That email doesn't look right.") } };
   if (phoneRaw && phone?.channel !== "whatsapp") return { fields: { phone: t("Write a mobile number with its country code, like +971 50 123 4567.") } };
   const kind = ["specialist", "parent", "team", "guest"].includes(str(fd, "kind")) ? str(fd, "kind") : null;
+  // The email and number are how someone signs in: never on the owner, another admin (unless you're the owner) or yourself.
+  if (!(await targetCheck(me, id))) return { error: t("You can't change this account here.") };
+  const before = await one<{ email: string | null; phone: string | null }>(`select email, phone from members where id = $1`, [id]);
   try {
     await query(`update members set email = $2, phone = $3, kind = coalesce($4, kind), talent_ref = $5 where id = $1`, [id, email?.address ?? null, phone?.address ?? null, kind, str(fd, "talent_ref", 20).replace(/^#/, "") || null]);
   } catch {
     return { error: t("Another member already uses that email or number.") };
   }
-  await audit(me, "member.details", `member:${id}`, { kind });
+  const contactChanged = Boolean(before) && ((before!.email ?? null) !== (email?.address ?? null) || (before!.phone ?? null) !== (phone?.address ?? null));
+  // A new email or number means signing in again with it: end the sessions made with the old one.
+  if (contactChanged) await endAllSessions(id);
+  await audit(me, "member.details", `member:${id}`, { kind, contactChanged });
   revalidatePath(`/admin/members/${id}`);
   return { ok: t("Saved.") };
 }
@@ -290,10 +315,17 @@ export async function channelMemberAction(channelId: number, memberId: number, a
 
 // ------------------------------------------------------------- moderation ----
 
+/** Moderators decide on posts in their own spaces; posts in private messages are for admins. */
+async function canModeratePost(me: Me, postId: number): Promise<boolean> {
+  const p = await one<{ space_id: number | null }>(`select c.space_id from posts p left join channels c on c.id = p.channel_id where p.id = $1`, [Number(postId)]);
+  if (!p) return false;
+  return p.space_id === null ? isAdmin(me) : canModerate(me, Number(p.space_id));
+}
+
 export async function reportDecision(reportId: number, removeIt: boolean, reason: string | null) {
   const me = await requireStaff("moderator");
   const r = await one<{ post_id: number }>(`select post_id from reports where id = $1`, [reportId]);
-  if (!r) return;
+  if (!r || !(await canModeratePost(me, Number(r.post_id)))) return;
   if (removeIt) await removePost(me, Number(r.post_id), reason, makeT(me.locale));
   else {
     await query(`update reports set status = 'dismissed', handled_by = $2, handled_at = now() where post_id = $1 and status = 'open'`, [r.post_id, me.id]);
@@ -304,6 +336,7 @@ export async function reportDecision(reportId: number, removeIt: boolean, reason
 
 export async function clearFlag(postId: number) {
   const me = await requireStaff("moderator");
+  if (!(await canModeratePost(me, postId))) return;
   await query(`update posts set flagged = null where id = $1`, [postId]);
   await audit(me, "post.clear_flag", `post:${postId}`);
   revalidatePath("/admin/moderation");
@@ -360,8 +393,17 @@ export async function sendBroadcastAction(_prev: ActionState, fd: FormData): Pro
 
 // ------------------------------------------------------- help, scheduled ----
 
+/** Moderators see and handle the help requests from their own spaces; the rest are for admins. */
+async function canHandleHelp(me: Me, id: number): Promise<boolean> {
+  const h = await one<{ space_id: number | null }>(`select space_id from help_requests where id = $1`, [Number(id)]);
+  if (!h) return false;
+  return h.space_id === null ? isAdmin(me) : canModerate(me, Number(h.space_id));
+}
+
 export async function helpStatus(id: number, status: "done" | "new") {
   const me = await requireStaff("moderator");
+  if (status !== "done" && status !== "new") return;
+  if (!(await canHandleHelp(me, id))) return;
   await query(`update help_requests set status = $2, handled_by = $3 where id = $1`, [id, status, me.id]);
   await audit(me, `help.${status}`, `help:${id}`);
   revalidatePath("/admin/help");
@@ -369,6 +411,7 @@ export async function helpStatus(id: number, status: "done" | "new") {
 
 export async function helpToCrm(id: number) {
   const me = await requireStaff("moderator");
+  if (!(await canHandleHelp(me, id))) return { ok: false };
   const r = await sendHelpToCrm(Number(id));
   await audit(me, "help.crm", `help:${id}`, { ok: r.ok });
   revalidatePath("/admin/help");
@@ -377,6 +420,7 @@ export async function helpToCrm(id: number) {
 
 export async function scheduledAction(id: number, now: boolean) {
   const me = await requireStaff("moderator");
+  if (!(await canModeratePost(me, id))) return;
   if (now) {
     const p = await one<{ id: number }>(`update posts set status = 'published', publish_at = null, created_at = now() where id = $1 and status = 'scheduled' returning id`, [id]);
     if (p) await fanOut(Number(p.id));

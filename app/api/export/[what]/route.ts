@@ -1,13 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getMe, isAdmin } from "@/lib/auth";
+import { getMe, staffOk } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { csvCell } from "@/lib/csv";
 import { query } from "@/lib/db";
 
 /** GET /api/export/members|responses|rsvps|help: a spreadsheet (CSV) for admins; every download is logged. */
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ what: string }> }) {
+  // The admin pages' rules: admin or owner, past two-step sign-in, and two-step set up when Settings require it.
   const me = await getMe();
-  if (!me || !isAdmin(me)) return new NextResponse("Admins only.", { status: 403 });
+  if (!me || !(await staffOk(me, "admin"))) return new NextResponse("Admins only.", { status: 403 });
   const what = (await ctx.params).what;
   const sets: Record<string, { head: string[]; sql: string }> = {
     members: { head: ["ID", "Name", "Shown as", "Kind", "Staff", "Status", "Email", "Phone", "City", "Country", "Languages", "Roles", "Verified", "Talent #", "Open to work", "Spaces", "Joined", "Last seen"],

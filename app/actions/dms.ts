@@ -1,7 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { isAdmin, requireMe } from "@/lib/auth";
+import { isAdmin, requireMe, requireStaff } from "@/lib/auth";
+import { memberInScope } from "@/lib/members";
 import { dmRule } from "@/lib/access";
 import { audit } from "@/lib/audit";
 import { one, query, transaction } from "@/lib/db";
@@ -59,10 +60,11 @@ export async function startDm(ids: number[], body: string): Promise<{ ok: boolea
 
 /** Admin: approve or decline a message request between a parent and a specialist. */
 export async function decideDm(id: number, approve: boolean) {
-  const me = await requireMe();
-  if (!me.staff) redirect("/");
+  // Staff rules (two-step sign-in when Settings require it); moderators decide only for people in their own spaces.
+  const me = await requireStaff("moderator");
   const d = await one<{ created_by: number; status: string }>(`select created_by, status from dms where id = $1`, [id]);
   if (!d || d.status !== "pending") return;
+  if (!(await memberInScope(me, Number(d.created_by)))) return;
   await query(`update dms set status = $2, decided_by = $3 where id = $1`, [id, approve ? "active" : "declined", me.id]);
   const posts = await query<{ id: number }>(`update posts set status = $2, hold_reason = null where dm_id = $1 and status = 'pending' and hold_reason = 'dm_request' returning id`, [id, approve ? "published" : "removed"]);
   if (approve) for (const p of posts) await fanOut(Number(p.id));

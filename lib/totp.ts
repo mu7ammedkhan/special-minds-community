@@ -37,13 +37,23 @@ function hotp(key: Buffer, counter: number): string {
 
 export const newTotpSecret = () => base32Encode(randomBytes(20));
 
-/** True when the code matches now, or 30 seconds either side (phone clocks drift). */
-export function verifyTotp(secret: string, token: string): boolean {
+/**
+ * The 30-second time step the code belongs to (now, or one either side, as
+ * phone clocks drift), or null when it doesn't match. Callers keep the last
+ * step used so the same code can't sign in twice.
+ */
+export function totpStep(secret: string, token: string): number | null {
   const key = base32Decode(secret);
   const clean = token.replace(/\D/g, "");
-  if (clean.length !== 6) return false;
+  if (clean.length !== 6) return null;
   const t = Math.floor(Date.now() / 30000);
-  return [-1, 0, 1].some((w) => hotp(key, t + w) === clean);
+  for (const w of [-1, 0, 1]) if (hotp(key, t + w) === clean) return t + w;
+  return null;
+}
+
+/** True when the code matches now, or 30 seconds either side (used when setting the app up). */
+export function verifyTotp(secret: string, token: string): boolean {
+  return totpStep(secret, token) !== null;
 }
 
 export function otpauthUrl(label: string, secret: string): string {

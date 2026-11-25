@@ -23,7 +23,11 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "same-origin" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           // The microphone is for voice notes, on this site only.
-          { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=(), payment=(), usb=()" },
+          // HTTPS only, on any host (Vercel adds a shorter one on its own domains).
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+          // Other sites' windows can't reach into ours. The page-level Content-Security-Policy is in proxy.ts.
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
         ],
       },
     ];
