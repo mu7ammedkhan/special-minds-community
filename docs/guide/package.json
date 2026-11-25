@@ -1,0 +1,13 @@
+{
+  "name": "special-minds-community-guide",
+  "private": true,
+  "type": "module",
+  "description": "Builds the Special Minds Community user guide (PDF): screenshots from a running copy of the community app, then the HTML printed by Chrome.",
+  "scripts": {
+    "shots": "node shots.mjs",
+    "pdf": "node build.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "25.11.0"
+  }
+}

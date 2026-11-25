@@ -1,6 +1,7 @@
 import "server-only";
 import { query } from "./db";
-import { isAdmin, type Me } from "./auth";
+import type { Me } from "./auth";
+import { canViewSql } from "./access";
 import { snippet } from "./text";
 
 /**
@@ -28,12 +29,10 @@ export async function search(me: Me, q: string): Promise<Hit[]> {
       where p.search @@ to_tsquery('simple', $2) and p.status = 'published'
         and (
           (p.dm_id is not null and exists (select 1 from dm_members dm where dm.dm_id = p.dm_id and dm.member_id = $1))
-          or (p.channel_id is not null and c.archived_at is null and s.enabled and (
-                $3::boolean
-                or (exists (select 1 from space_members sm where sm.space_id = c.space_id and sm.member_id = $1)
-                    and (c.visibility = 'open' or exists (select 1 from channel_members cm where cm.channel_id = c.id and cm.member_id = $1))))))
+          -- The same "may see this channel" rule as the channel pages, including "See" switched off for parents or guests.
+          or (p.channel_id is not null and exists (select 1 from members vm where vm.id = $1 and ${canViewSql("vm", "c", "s")})))
       order by ts_rank(p.search, to_tsquery('simple', $2)) desc, p.created_at desc limit 50`,
-    [me.id, tsq, isAdmin(me)]);
+    [me.id, tsq]);
   return rows.map((r) => {
     const root = r.parent_id ?? r.id;
     const link = r.dm_id ? `/dm/${r.dm_id}`

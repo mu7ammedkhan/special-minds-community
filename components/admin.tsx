@@ -268,7 +268,7 @@ export const WordRemove = ({ id }: { id: number }) => { const t = useT(); return
 export const HelpButtons = ({ id, status, crm }: { id: number; status: string; crm: boolean }) => {
   const t = useT();
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex shrink-0 flex-wrap items-start gap-2 self-start">
       {status !== "done" ? <Act variant="good" run={() => helpStatus(id, "done")}>{t("Mark as handled")}</Act> : <Act variant="ghost" run={() => helpStatus(id, "new")}>{t("Reopen")}</Act>}
       {crm && status !== "sent" && <Act run={() => helpToCrm(id)}>{t("Send to the CRM")}</Act>}
     </div>

@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requireStaff } from "@/lib/auth";
 import { one } from "@/lib/db";
 import { getT } from "@/lib/i18n/server";
@@ -11,7 +11,10 @@ export const metadata = { title: "New channel" };
 export default async function NewChannel({ searchParams }: { searchParams: Promise<{ space?: string }> }) {
   await requireStaff("admin");
   const { t } = await getT();
-  const s = await one<{ id: number; name: string; audience: string }>(`select id, name, audience from spaces where id = $1`, [Number((await searchParams).space)]);
+  // A new channel always belongs to a space: without one (an old or typed link), go and pick it.
+  const spaceId = Number((await searchParams).space);
+  if (!Number.isInteger(spaceId) || spaceId <= 0) redirect("/admin/spaces");
+  const s = await one<{ id: number; name: string; audience: string }>(`select id, name, audience from spaces where id = $1`, [spaceId]);
   if (!s) notFound();
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">

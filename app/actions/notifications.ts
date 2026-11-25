@@ -14,13 +14,29 @@ export async function markNotificationsRead(which: "all" | number[]) {
   else await query(`update notifications set read_at = now() where member_id = $1 and id = any($2::bigint[]) and read_at is null`, [me.id, which.map(Number)]);
 }
 
+/** The browsers' own pop-up services (Chrome, Edge, Firefox, Safari): the server sends pop-ups to these hosts and nowhere else. */
+const PUSH_HOSTS = [/^fcm\.googleapis\.com$/, /^android\.googleapis\.com$/, /^updates\.push\.services\.mozilla\.com$/, /(^|\.)push\.apple\.com$/, /(^|\.)notify\.windows\.com$/];
+const knownPushService = (endpoint: string) => {
+  try {
+    const u = new URL(endpoint);
+    return u.protocol === "https:" && !u.port && !u.username && PUSH_HOSTS.some((r) => r.test(u.hostname));
+  } catch {
+    return false;
+  }
+};
+/** Phones and computers with pop-ups on, per member; the oldest goes when a new one is added. */
+const MAX_DEVICES = 10;
+
 export async function savePushSubscription(sub: { endpoint?: string; keys?: { p256dh?: string; auth?: string } }, device: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const me = await requireMe();
-  if (!sub?.endpoint || !sub.keys?.p256dh || !sub.keys?.auth || !/^https:\/\//.test(sub.endpoint)) return { ok: false, error: makeT(me.locale)("This browser sent an incomplete sign-up. Try again.") };
+  const t = makeT(me.locale);
+  if (!sub?.endpoint || !sub.keys?.p256dh || !sub.keys?.auth || !/^https:\/\//.test(sub.endpoint)) return { ok: false, error: t("This browser sent an incomplete sign-up. Try again.") };
+  if (!knownPushService(sub.endpoint)) return { ok: false, error: t("This browser's pop-up service isn't supported. Try Chrome, Edge, Firefox or Safari.") };
   await query(
     `insert into push_subscriptions (member_id, endpoint, p256dh, auth, device) values ($1, $2, $3, $4, $5)
      on conflict (endpoint) do update set member_id = excluded.member_id, p256dh = excluded.p256dh, auth = excluded.auth, device = excluded.device`,
     [me.id, sub.endpoint.slice(0, 1000), sub.keys.p256dh.slice(0, 200), sub.keys.auth.slice(0, 100), String(device ?? "").slice(0, 80)]);
+  await query(`delete from push_subscriptions where member_id = $1 and id not in (select id from push_subscriptions where member_id = $1 order by id desc limit $2)`, [me.id, MAX_DEVICES]);
   return { ok: true };
 }
 

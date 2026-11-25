@@ -53,11 +53,48 @@ export type Me = {
 export const SESSION_COOKIE = "smm_session";
 const SESSION_DAYS = 30;
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
+export const hashToken = sha;
+/** The shape of a one-time sign-in link token (32 random bytes, base64url). */
+export const LINK_TOKEN = /^[A-Za-z0-9_-]{20,100}$/;
+
+/**
+ * Where to go after signing in or switching language: our own pages only.
+ * Refuses "//host" and "/\host" (browsers read both as another site), spaces
+ * and control characters, and the API, both as written and percent-decoded
+ * (a decoded "%09" tab is dropped by URL parsers, turning "/%09/host" into "//host").
+ */
+export function safeNext(v: unknown): string {
+  if (typeof v !== "string" || v.length > 500) return "/";
+  let decoded: string;
+  try { decoded = decodeURIComponent(v); } catch { return "/"; }
+  const ok = (s: string) => /^\/(?![/\\])[^\\\s\x00-\x1f\x7f]*$/.test(s) && !s.startsWith("/api");
+  return ok(v) && ok(decoded) ? v : "/";
+}
 
 export async function clientIp(): Promise<string | null> {
   const h = await headers();
   return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || null;
 }
+
+/**
+ * What sign-in codes are counted against: the IPv4 address, or for IPv6 its /64
+ * network (one home or phone gets a whole /64, so counting single addresses
+ * would let one person ask from millions of them).
+ */
+export function rateKey(ip: string | null): string | null {
+  if (!ip) return null;
+  const v4 = ip.match(/^(?:::ffff:)?(\d{1,3}(?:\.\d{1,3}){3})$/i);
+  if (v4) return v4[1];
+  if (!ip.includes(":")) return ip.slice(0, 64);
+  const [head, tail] = ip.split("%")[0].toLowerCase().split("::");
+  const h = head ? head.split(":") : [];
+  const t = tail === undefined ? [] : tail ? tail.split(":") : [];
+  const groups = tail === undefined ? h : [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill("0"), ...t];
+  return `${groups.slice(0, 4).map((g) => g.replace(/^0+(?=.)/, "") || "0").join(":")}::/64`;
+}
+
+/** New addresses (not yet members) that may be sent a code each hour, across everyone: stops a script using up the email quota. */
+const NEW_ADDRESS_CODES_PER_HOUR = 200;
 
 // ----------------------------------------------------------------- sessions ----
 
@@ -82,7 +119,21 @@ export async function endSession() {
 
 export async function markMfaOk() {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  if (token) await query(`update sessions set mfa_ok = true where id = $1`, [sha(token)]);
+  if (token) await query(`update sessions set mfa_ok = true, mfa_tries = 0 where id = $1`, [sha(token)]);
+}
+
+/** Two-step codes allowed per session before it is signed out (then a new email or WhatsApp code is needed). */
+export const MFA_TRIES = 5;
+
+/**
+ * Counts a two-step code try on this session before the code is checked, in one
+ * statement, so parallel guesses can't get past MFA_TRIES. Returns the count.
+ */
+export async function countMfaTry(): Promise<number> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) return Number.POSITIVE_INFINITY;
+  const r = await one<{ n: number }>(`update sessions set mfa_tries = mfa_tries + 1 where id = $1 returning mfa_tries as n`, [sha(token)]);
+  return r ? Number(r.n) : Number.POSITIVE_INFINITY;
 }
 
 /** Signs someone out everywhere (suspension, ban, deleting the account). */
@@ -97,8 +148,8 @@ type Row = {
   mfa_ok: boolean; refresh: boolean; stale: boolean; spaces: number[];
 };
 
-/** The signed-in member, or null. Read once per request. */
-export const getMe = cache(async (): Promise<Me | null> => {
+/** The session's member, two-step code or not. Read once per request. */
+const loadMe = cache(async (): Promise<Me | null> => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const row = await one<Row>(
@@ -122,9 +173,22 @@ export const getMe = cache(async (): Promise<Me | null> => {
   };
 });
 
+/**
+ * The signed-in member, or null. Also null while their two-step code is still
+ * to come, so a session that only passed the email or WhatsApp code can't use
+ * pages, actions or API routes.
+ */
+export const getMe = cache(async (): Promise<Me | null> => {
+  const me = await loadMe();
+  return me && me.totpOn && !me.mfaOk ? null : me;
+});
+
+/** The member before their two-step code too: only for the two-step page, signing out and the language switch. */
+export const getPendingMe = loadMe;
+
 /** For pages and actions: signed in, past two-step sign-in, profile done and in the community. */
 export async function requireMe(opts: { allowPending?: boolean; skipMfa?: boolean } = {}): Promise<Me> {
-  const me = await getMe();
+  const me = await loadMe();
   if (!me) redirect("/login");
   if (!opts.skipMfa && me.totpOn && !me.mfaOk) redirect("/mfa");
   if (!opts.allowPending && (me.status !== "active" || !me.profileDone)) redirect("/welcome");
@@ -142,6 +206,12 @@ export async function requireStaff(level: StaffRole = "moderator"): Promise<Me> 
   if (!atLeast(me, level)) redirect("/?denied=1");
   if ((await getSettings()).requireStaff2fa && !me.totpOn) redirect("/account?tab=security&setup=1");
   return me;
+}
+
+/** requireStaff's rules for API routes, which answer with an error instead of a redirect. */
+export async function staffOk(me: Me | null, level: StaffRole = "moderator"): Promise<boolean> {
+  if (!me || me.status !== "active" || !atLeast(me, level)) return false;
+  return !(await getSettings()).requireStaff2fa || me.totpOn;
 }
 
 // ------------------------------------------------------------ sign-in codes ----
@@ -164,12 +234,23 @@ export function readAddress(raw: string, defaultCountry = "AE"): Address | null 
 export const showCodesOnScreen = () => process.env.SHOW_CODES === "1" || process.env.DEMO_LOGINS === "1";
 
 export async function sendLoginCode(addr: Address, locale: Locale): Promise<{ ok: true; preview?: string } | { ok: false; error: string }> {
-  const ip = await clientIp();
+  const ip = rateKey(await clientIp());
   const recent = await one<{ a: number; i: number }>(
     `select (select count(*) from login_codes where address = $1 and created_at > now() - interval '1 hour')::int as a,
             (select count(*) from login_codes where ip = $2 and created_at > now() - interval '1 hour')::int as i`, [addr.address, ip]);
   if ((recent?.a ?? 0) >= 6 || (recent?.i ?? 0) >= 40) return { ok: false, error: "Too many codes asked for. Please wait an hour and try again." };
   if (await one(`select 1 from banned_contacts where contact = $1`, [addr.address])) return { ok: false, error: "This email or phone number can't join the community." };
+  const known = await one(addr.channel === "email" ? `select 1 from members where lower(email) = $1` : `select 1 from members where phone = $1`, [addr.address]);
+  if (!known) {
+    // Members always get their code; new addresses share an hourly allowance.
+    const fresh = await one<{ n: number }>(
+      `select count(*)::int as n from login_codes c where c.created_at > now() - interval '1 hour'
+          and not exists (select 1 from members m where lower(m.email) = c.address or m.phone = c.address)`);
+    if ((fresh?.n ?? 0) >= NEW_ADDRESS_CODES_PER_HOUR) {
+      console.warn(`sign-in codes: the hourly allowance for new addresses (${NEW_ADDRESS_CODES_PER_HOUR}) is used up`);
+      return { ok: false, error: "Sign-ups are very busy right now. Please try again in an hour." };
+    }
+  }
   const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
   await query(`insert into login_codes (address, channel, code_hash, ip, expires_at) values ($1, $2, $3, $4, now() + interval '10 minutes')`,
     [addr.address, addr.channel, sha(`${addr.address}:${code}`), ip]);
@@ -196,12 +277,12 @@ export async function verifyLoginCode(address: string, code: string): Promise<{ 
   const row = await one<{ id: number; code_hash: string; attempts: number }>(
     `select id, code_hash, attempts from login_codes where address = $1 and used_at is null and expires_at > now() order by created_at desc limit 1`, [address]);
   if (!row) return { ok: false, error: "That code has expired. Ask for a new one." };
-  if (row.attempts >= 5) return { ok: false, error: "Too many wrong tries. Ask for a new code." };
-  if (!safeEqual(row.code_hash, sha(`${address}:${code.replace(/\D/g, "")}`))) {
-    await query(`update login_codes set attempts = attempts + 1 where id = $1`, [row.id]);
-    return { ok: false, error: "That code isn't right. Check it and try again." };
-  }
-  await query(`update login_codes set used_at = now() where id = $1`, [row.id]);
+  // Count the try before comparing, in one statement, so parallel guesses can't get more than five.
+  const tried = await one<{ code_hash: string }>(`update login_codes set attempts = attempts + 1 where id = $1 and attempts < 5 returning code_hash`, [row.id]);
+  if (!tried) return { ok: false, error: "Too many wrong tries. Ask for a new code." };
+  if (!safeEqual(tried.code_hash, sha(`${address}:${code.replace(/\D/g, "")}`))) return { ok: false, error: "That code isn't right. Check it and try again." };
+  // A code signs in once, even if it's sent twice at the same moment.
+  if (!(await one(`update login_codes set used_at = now() where id = $1 and used_at is null returning id`, [row.id]))) return { ok: false, error: "That code has expired. Ask for a new one." };
   const isEmail = address.includes("@");
   const m = await one<{ id: number; status: string }>(isEmail ? `select id, status from members where lower(email) = $1` : `select id, status from members where phone = $1`, [address]);
   if (m?.status === "banned") return { ok: false, error: "This account has been removed from the community." };

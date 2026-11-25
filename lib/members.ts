@@ -19,7 +19,16 @@ type Run = Pick<Tx, "query" | "one">;
 export async function addToSpace(tx: Run | null, memberId: number, spaceId: number, extraChannels: number[] = []) {
   const run = tx ? tx.query.bind(tx) : query;
   await run(`insert into space_members (space_id, member_id) values ($1, $2) on conflict do nothing`, [spaceId, memberId]);
-  const chans = await run(`select id, type from channels where space_id = $1 and archived_at is null and ((auto_join and visibility = 'open') or id = any($2::int[]))`, [spaceId, extraChannels]) as { id: number; type: ChannelType }[];
+  // Not channels where an admin switched "See" off for this member's kind (parents or guests).
+  const chans = await run(
+    `select c.id, c.type from channels c join members m on m.id = $3
+      where c.space_id = $1 and c.archived_at is null and ((c.auto_join and c.visibility = 'open') or c.id = any($2::int[]))
+        and (m.staff_role is not null or case m.kind
+              when 'parent' then coalesce((c.perms -> 'parent' ->> 'view')::boolean, true)
+              when 'guest' then coalesce((c.perms -> 'guest' ->> 'view')::boolean, true)
+              when 'team' then true
+              else coalesce((c.perms -> 'specialist' ->> 'view')::boolean, true) end)`,
+    [spaceId, extraChannels, memberId]) as { id: number; type: ChannelType }[];
   for (const c of chans) {
     await run(`insert into channel_members (channel_id, member_id, notify, last_read_at) values ($1, $2, $3, now() - interval '3 days') on conflict do nothing`, [c.id, memberId, defaultNotify(c.type)]);
   }
@@ -66,6 +75,7 @@ export async function saveProfile(tx: Run | null, memberId: number, p: Profile, 
 export async function finishJoin(me: Me, spaceId: number, answers: Record<string, string>, invite: InviteRow | null): Promise<"joined" | "requested" | "already"> {
   if (me.spaces.includes(spaceId)) return "already";
   const direct = Boolean(invite && invite.auto_approve) || (await one<{ join_policy: string }>(`select join_policy from spaces where id = $1`, [spaceId]))?.join_policy === "open";
+  let newRequest = false;
   const out = await transaction(async (tx) => {
     await tx.query(`update members set rules_accepted_at = now(), consent_at = now() where id = $1`, [me.id]);
     if (invite) await tx.query(`update invites set uses = uses + 1 where id = $1`, [invite.id]);
@@ -77,13 +87,16 @@ export async function finishJoin(me: Me, spaceId: number, answers: Record<string
       await addToSpace(tx, me.id, spaceId, invite?.channel_ids ?? []);
       return "joined" as const;
     }
+    const waiting = await tx.one(`select 1 from join_requests where space_id = $1 and member_id = $2 and status = 'pending'`, [spaceId, me.id]);
     await tx.query(
       `insert into join_requests (space_id, member_id, invite_id, answers) values ($1, $2, $3, $4::text::jsonb)
        on conflict (space_id, member_id) where status = 'pending' do update set answers = excluded.answers`,
       [spaceId, me.id, invite?.id ?? null, JSON.stringify(answers)]);
+    newRequest = !waiting;
     return "requested" as const;
   });
-  if (out === "requested") {
+  // Staff hear about a request once: sending the form again only updates the answers.
+  if (out === "requested" && newRequest) {
     const staff = await spaceStaff(spaceId);
     await notify(null, staff, { kind: "request", title: (t) => t("{name} asked to join", { name: me.fullName }), link: "/admin/requests", actorId: me.id });
   }
@@ -142,11 +155,27 @@ export async function setStatus(me: Me, memberId: number, status: "active" | "su
   await audit(me, `member.${status === "active" ? "reinstate" : status === "suspended" ? "suspend" : "ban"}`, `member:${memberId}`, { reason });
 }
 
+/**
+ * Who a staff member may act on: admins and the owner look after everyone;
+ * moderators only the people in their own spaces, and people asking to join one.
+ */
+export async function memberInScope(me: Me, memberId: number): Promise<boolean> {
+  if (me.staff === "owner" || me.staff === "admin") return true;
+  if (me.staff !== "moderator" || !me.spaces.length) return false;
+  return Boolean(await one(
+    `select 1 where exists (select 1 from space_members where member_id = $1 and space_id = any($2::int[]))
+                 or exists (select 1 from join_requests where member_id = $1 and space_id = any($2::int[]) and status = 'pending')`,
+    [memberId, me.spaces]));
+}
+
 export async function setStaffRole(me: Me, memberId: number, role: StaffRole | null): Promise<string | null> {
   if (memberId === me.id) return "You can't change your own staff role.";
+  // There is one owner. Handing the community to someone else is done by Special Minds' developer (scripts/db.mjs staff-role).
+  if (role === "owner") return "The owner can only be changed by Special Minds' developer.";
+  if (role !== null && role !== "admin" && role !== "moderator") return "Not found.";
   const target = await one<{ staff_role: StaffRole | null }>(`select staff_role from members where id = $1`, [memberId]);
   if (!target) return "Not found.";
-  const ownerOnly = role === "owner" || role === "admin" || target.staff_role === "owner" || target.staff_role === "admin";
+  const ownerOnly = role === "admin" || target.staff_role === "owner" || target.staff_role === "admin";
   if (ownerOnly && me.staff !== "owner") return "Only the owner can make or remove admins.";
   if (me.staff !== "owner" && me.staff !== "admin") return "Only admins can change staff roles.";
   await query(`update members set staff_role = $2 where id = $1`, [memberId, role]);

@@ -2,13 +2,13 @@
 
 import { redirect } from "next/navigation";
 import QRCode from "qrcode";
-import { endAllSessions, getMe, markMfaOk, requireMe, startSession } from "@/lib/auth";
+import { countMfaTry, endAllSessions, endSession, getMe, markMfaOk, MFA_TRIES, requireMe, startSession } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { one, query } from "@/lib/db";
 import { makeT } from "@/lib/i18n";
 import { deleteAccount, saveProfile } from "@/lib/members";
 import { COUNTRY, ROLES } from "@/lib/options";
-import { newTotpSecret, otpauthUrl, verifyTotp } from "@/lib/totp";
+import { newTotpSecret, otpauthUrl, totpStep, verifyTotp } from "@/lib/totp";
 import type { ActionState } from "@/components/form";
 
 export async function saveMyProfile(_prev: ActionState, fd: FormData): Promise<ActionState> {
@@ -44,13 +44,13 @@ export async function setAvatar(fileId: number | null) {
 }
 
 /** Two-step sign-in, step 1: a new secret and its QR code (not switched on until a code from the app is typed). */
-export async function totpStart(): Promise<{ secret: string; qr: string }> {
+export async function totpStart(): Promise<{ secret: string; qr: string } | null> {
   const me = await requireMe();
-  const secret = newTotpSecret();
-  await query(`update members set totp_secret = $2 where id = $1 and not totp_on`, [me.id, secret]);
-  const row = await one<{ totp_secret: string }>(`select totp_secret from members where id = $1`, [me.id]);
-  const url = otpauthUrl(me.email ?? me.phone ?? me.fullName, row!.totp_secret);
-  return { secret: row!.totp_secret, qr: await QRCode.toDataURL(url, { margin: 1, width: 220 }) };
+  // Only while two-step sign-in is off: a working authenticator's secret is never shown again.
+  const row = await one<{ totp_secret: string }>(`update members set totp_secret = $2 where id = $1 and not totp_on returning totp_secret`, [me.id, newTotpSecret()]);
+  if (!row) return null;
+  const url = otpauthUrl(me.email ?? me.phone ?? me.fullName, row.totp_secret);
+  return { secret: row.totp_secret, qr: await QRCode.toDataURL(url, { margin: 1, width: 220 }) };
 }
 
 export async function totpConfirm(code: string): Promise<{ ok: boolean; error?: string }> {
@@ -67,9 +67,16 @@ export async function totpConfirm(code: string): Promise<{ ok: boolean; error?: 
 export async function totpDisable(code: string): Promise<{ ok: boolean; error?: string }> {
   const me = await requireMe();
   const t = makeT(me.locale);
+  // The same five tries as signing in, so a borrowed session can't guess its way to switching two-step off.
+  if ((await countMfaTry()) > MFA_TRIES) {
+    await audit(me, "2fa.locked", `member:${me.id}`);
+    await endSession();
+    redirect("/login?mfa=locked");
+  }
   const row = await one<{ totp_secret: string | null }>(`select totp_secret from members where id = $1`, [me.id]);
-  if (!row?.totp_secret || !verifyTotp(row.totp_secret, code)) return { ok: false, error: t("That code isn't right. Use the newest code in your authenticator app.") };
-  await query(`update members set totp_on = false, totp_secret = null where id = $1`, [me.id]);
+  if (!row?.totp_secret || totpStep(row.totp_secret, code) === null) return { ok: false, error: t("That code isn't right. Use the newest code in your authenticator app.") };
+  await query(`update members set totp_on = false, totp_secret = null, totp_last_step = null where id = $1`, [me.id]);
+  await markMfaOk();
   await audit(me, "2fa.off", `member:${me.id}`);
   return { ok: true };
 }

@@ -20,7 +20,7 @@ export default async function OutboxPage({ searchParams }: { searchParams: Promi
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-4 py-6 sm:px-6">
       <PageHeader title={t("Delivery log")} subtitle={t("Every email and WhatsApp message the community sends: sign-in codes (the code itself is never kept), invites, digests, nudges, broadcasts.")} />
-      {(!ready.email || !ready.whatsapp) && <Alert tone="info" title={t("Nothing leaves this preview")}>{t("Without the email and WhatsApp keys, messages are only written here as “Simulated”, so you can see exactly what would be sent.")}</Alert>}
+      {(!ready.email || !ready.whatsapp) && <Alert tone="info" title={t(!ready.email && !ready.whatsapp ? "Email and WhatsApp aren't connected yet" : !ready.email ? "Email isn't connected yet" : "WhatsApp isn't connected yet")}>{t("Without the email and WhatsApp keys, messages are only written here as “Simulated”, so you can see exactly what would be sent.")}</Alert>}
       <nav className="flex gap-1">{[["", t("All")], ["email", t("Email")], ["whatsapp", "WhatsApp"]].map(([k, l]) => <Link key={k} href={`/admin/outbox${k ? `?channel=${k}` : ""}`} className={cx("rounded-full px-4 py-1.5 text-sm font-semibold", ch === k ? "bg-brand text-white" : "text-ink-soft hover:bg-brand-50")}>{l}</Link>)}</nav>
       <ul className="space-y-2">
         {rows.map((r) => (

@@ -78,3 +78,40 @@ Vercel project `special-minds-community-preview` with its own free Neon database
 (`special-minds-community-preview-db`, Frankfurt) and made-up demo data
 (`DATABASE_URL=<unpooled> node scripts/db.mjs seed --demo-database`). Deployed from a clean copy of
 this folder with `npx vercel@64.0.2 deploy --prod --yes --archive=tgz`.
+
+## Live site
+
+https://community.specialminds.app: Vercel project `special-minds-community` with its own free Neon
+database (`special-minds-community-db`, Frankfurt), started empty on 14 Nov 2026. Never put demo data
+here, and never set `DEMO_LOGINS` or `SHOW_CODES` on it.
+
+```bash
+DATABASE_URL=<unpooled> node scripts/db.mjs setup                                  # tables, 3 spaces, 24 channels, word list; no people or posts
+DATABASE_URL=<unpooled> npm run member:add -- someone@example.com "Their Name"    # an owner, in every space and channel
+DATABASE_URL=<unpooled> APP_URL=https://community.specialminds.app \
+  node scripts/db.mjs owner-link someone@example.com 72                            # one-time sign-in link (before email works)
+DATABASE_URL=<unpooled> node scripts/db.mjs staff-role someone@example.com admin   # owner|admin|moderator|none (the admin screens never change an owner)
+```
+
+A one-time link opens a "Sign in as …, Continue" page and is used only when Continue is pressed, so a
+WhatsApp or Slack preview can't use it up.
+
+Settings on the project: `APP_URL`, `NEXT_PUBLIC_APP_TIMEZONE`, `DATABASE_POOL_MAX`, its own VAPID keys,
+`CRON_SECRET`, and the Neon ones. Still to add: `RESEND_API_KEY` + `EMAIL_FROM` (email sign-in codes),
+optionally the WhatsApp ones, `CRM_INTAKE_*` and `TALENT_SHORTLIST_*`. DNS: CNAME `community` at
+Hostinger. Deploy the same way as the preview, from a clean copy linked to this project.
+
+## User guide
+
+`docs/guide` builds `Special Minds Community - User Guide.pdf` (38 pages, the same style as the CRM's guide). The
+screenshots come from a local copy with made-up data, never the live site:
+
+```bash
+rm -rf .data/guide && DATABASE_URL=pglite://.data/guide node scripts/db.mjs reset
+npm run build
+DATABASE_URL=pglite://.data/guide APP_URL=https://community.specialminds.app npx next start -p 4812
+cd docs/guide && node shots.mjs            # or: node shots.mjs opps thread  (only those)
+node build.mjs "/path/to/Special Minds Community - User Guide.pdf"
+```
+
+Text-only changes need just `node build.mjs`. The contents page numbers are typed in guide.html: check them after a change.

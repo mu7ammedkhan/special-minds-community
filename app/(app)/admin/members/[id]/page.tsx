@@ -5,6 +5,7 @@ import { memberDetailsAction } from "@/app/actions/admin";
 import { one, query } from "@/lib/db";
 import { fmtDateTime, fmtPhone, timeAgo } from "@/lib/format";
 import { getT } from "@/lib/i18n/server";
+import { memberInScope } from "@/lib/members";
 import { talentProfileUrl } from "@/lib/opportunities";
 import { KIND_LABEL, STAFF_LABEL, roleLabel, type Kind, type StaffRole } from "@/lib/options";
 import { snippet } from "@/lib/text";
@@ -26,10 +27,14 @@ export default async function AdminMember({ params }: { params: Promise<{ id: st
     created_at: string; totp_on: boolean; locale: string; prefs: Record<string, unknown>;
   }>(`select *, case when muted_until > now() then muted_until end as muted_until from members where id = $1`, [id]) : null;
   if (!m) notFound();
+  // Moderators see the people in their own spaces (and people asking to join one), as on the members list.
+  if (!(await memberInScope(me, Number(m.id)))) notFound();
   const spaces = await query<{ id: number; name: string }>(`select id, name from spaces ${isAdmin(me) ? "" : "where id = any($1::int[])"} order by position, id`, isAdmin(me) ? [] : [me.spaces]);
   const memberSpaces = (await query<{ space_id: number }>(`select space_id from space_members where member_id = $1`, [id])).map((r) => Number(r.space_id));
   const posts = await query<{ id: number; body: string; title: string | null; status: string; created_at: string; channel: string | null }>(
-    `select p.id, p.body, p.title, p.status, p.created_at, c.name as channel from posts p left join channels c on c.id = p.channel_id where p.author_id = $1 and p.dm_id is null order by p.created_at desc limit 12`, [id]);
+    `select p.id, p.body, p.title, p.status, p.created_at, c.name as channel from posts p left join channels c on c.id = p.channel_id
+      where p.author_id = $1 and p.dm_id is null ${isAdmin(me) ? "" : "and c.space_id = any($2::int[])"} order by p.created_at desc limit 12`,
+    isAdmin(me) ? [id] : [id, me.spaces]);
   const log = await query<{ actor_name: string | null; action: string; detail: Record<string, unknown>; created_at: string }>(`select actor_name, action, detail, created_at from audit_log where target = $1 order by created_at desc limit 15`, [`member:${id}`]);
   const talent = talentProfileUrl(m.talent_ref);
   return (
