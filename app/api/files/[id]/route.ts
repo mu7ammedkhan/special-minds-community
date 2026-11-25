@@ -16,7 +16,10 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     headers: {
       "Content-Type": f.mime,
       "Content-Disposition": `${inline ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(f.name)}`,
-      "Cache-Control": "private, max-age=86400",
+      // Short, so a removed photo doesn't linger on people's devices for a day.
+      "Cache-Control": "private, max-age=600",
+      "X-Content-Type-Options": "nosniff",
+      "Cross-Origin-Resource-Policy": "same-origin",
       "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
     },
   });

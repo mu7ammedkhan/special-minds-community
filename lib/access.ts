@@ -38,6 +38,33 @@ export const CHANNEL_SELECT = `
 export const canEnterSpace = (me: Me, spaceId: number) => isAdmin(me) || me.spaces.includes(spaceId);
 export const canModerate = (me: Me, spaceId: number) => isAdmin(me) || (me.staff === "moderator" && me.spaces.includes(spaceId));
 
+/**
+ * permsFor's "may see this channel" rule in SQL, for queries over many posts or
+ * people. m is a members row, c a channels row and s its space. Every kind may
+ * see by default; an admin can switch "See" off for parents or guests.
+ */
+export const canViewSql = (m: string, c: string, s: string) => `(
+  ${m}.status = 'active' and ${c}.archived_at is null and ${s}.enabled and (
+    ${m}.staff_role in ('owner', 'admin')
+    or (exists (select 1 from space_members vsm where vsm.space_id = ${c}.space_id and vsm.member_id = ${m}.id) and (
+      ${m}.staff_role = 'moderator'
+      or ((${c}.visibility = 'open' or exists (select 1 from channel_members vcm where vcm.channel_id = ${c}.id and vcm.member_id = ${m}.id))
+          and (case ${m}.kind
+                 when 'team' then coalesce((${c}.perms -> 'specialist' ->> 'view')::boolean, true) or coalesce((${c}.perms -> 'parent' ->> 'view')::boolean, true)
+                 when 'parent' then coalesce((${c}.perms -> 'parent' ->> 'view')::boolean, true)
+                 when 'guest' then coalesce((${c}.perms -> 'guest' ->> 'view')::boolean, true)
+                 else coalesce((${c}.perms -> 'specialist' ->> 'view')::boolean, true) end))))))`;
+
+/** Of these people, the ones who may see this channel (and so may be told about its posts). */
+export async function viewersOf(channelId: number, ids: number[]): Promise<number[]> {
+  const list = [...new Set(ids.map(Number).filter((n) => n > 0))];
+  if (!list.length) return [];
+  const rows = await query<{ id: number }>(
+    `select m.id from members m, channels c join spaces s on s.id = c.space_id
+      where c.id = $1 and m.id = any($2::bigint[]) and ${canViewSql("m", "c", "s")}`, [channelId, list]);
+  return rows.map((r) => Number(r.id));
+}
+
 const NONE: Perms = { view: false, post: false, reply: false, react: false, upload: false };
 const ALL: Perms = { view: true, post: true, reply: true, react: true, upload: true };
 
@@ -73,7 +100,8 @@ export async function channelBySlug(me: Me, spaceSlug: string, channelSlug: stri
 
 export async function channelById(me: Me, id: number): Promise<Access | null> {
   if (!Number.isFinite(id)) return null;
-  const ch = await one<ChannelRow>(`${CHANNEL_SELECT} where c.id = $1`, [id]);
+  // A switched-off space is hidden from members, as on its own pages (channelBySlug); admins still reach it.
+  const ch = await one<ChannelRow>(`${CHANNEL_SELECT} where c.id = $1 and (s.enabled or $2::boolean)`, [id, isAdmin(me)]);
   return accessFor(me, ch);
 }
 

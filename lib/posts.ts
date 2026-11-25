@@ -2,7 +2,7 @@ import "server-only";
 import { after } from "next/server";
 import { one, outsideTransaction, query, transaction } from "./db";
 import type { Me } from "./auth";
-import { blockText, channelById, dmById, ensureJoined, postingBlock, type Access, type DmAccess } from "./access";
+import { blockText, canViewSql, channelById, dmById, ensureJoined, postingBlock, viewersOf, type Access, type DmAccess } from "./access";
 import { audit } from "./audit";
 import { pick, type Locale, type T } from "./i18n";
 import { fetchPreview } from "./linkpreview";
@@ -411,7 +411,9 @@ export async function fanOut(id: number) {
   const chName = (l: Locale) => pick(l, p.ch_name ?? "", p.ch_name_ar);
   const told = new Set<number>([Number(p.author_id)]);
   const send = async (ids: number[], n: Parameters<typeof notify>[2]) => {
-    const fresh = ids.map(Number).filter((x) => !told.has(x));
+    let fresh = ids.map(Number).filter((x) => !told.has(x));
+    // Only people who may see the channel are told: a mention or reply never carries a private channel's words to anyone else.
+    if (p.channel_id && fresh.length) fresh = await viewersOf(Number(p.channel_id), fresh);
     fresh.forEach((x) => told.add(x));
     if (fresh.length) await notify(null, fresh, { ...n, actorId: Number(p.author_id), postId: p.id, link });
   };
@@ -423,9 +425,10 @@ export async function fanOut(id: number) {
   }
   // Mentions first: they matter most.
   if (p.mentions?.length) {
-    const ok = await query<{ member_id: number }>(`select member_id from channel_members where channel_id = $1 and member_id = any($2::bigint[]) and notify <> 'off'`, [p.channel_id, p.mentions]);
-    const notMembers = p.mentions.filter((x) => !ok.some((o) => Number(o.member_id) === Number(x)));
-    await send([...ok.map((o) => o.member_id), ...notMembers], { kind: "mention", title: (t, l) => t("{name} mentioned you in #{channel}", { name: who(t), channel: chName(l) }), body: text });
+    // Everyone mentioned who may see the channel, except members who set this channel's alerts to Nothing.
+    const off = await query<{ member_id: number }>(`select member_id from channel_members where channel_id = $1 and member_id = any($2::bigint[]) and notify = 'off'`, [p.channel_id, p.mentions]);
+    const quiet = new Set(off.map((o) => Number(o.member_id)));
+    await send(p.mentions.map(Number).filter((x) => !quiet.has(x)), { kind: "mention", title: (t, l) => t("{name} mentioned you in #{channel}", { name: who(t), channel: chName(l) }), body: text });
   }
   if (p.mention_all) {
     const all = await query<{ member_id: number }>(`select member_id from channel_members where channel_id = $1 and notify <> 'off'`, [p.channel_id]);
@@ -588,7 +591,15 @@ export async function reportPost(me: Me, id: number, reason: string, note: strin
 export async function recordViews(me: Me, ids: number[]) {
   const list = [...new Set(ids.map(Number).filter((n) => n > 0))].slice(0, 100);
   if (!list.length) return;
-  await query(`insert into post_views (post_id, member_id) select x, $2 from unnest($1::bigint[]) x where exists (select 1 from posts where id = x) on conflict do nothing`, [list, me.id]);
+  // Only posts this member may see count as seen.
+  await query(
+    `insert into post_views (post_id, member_id)
+     select p.id, vm.id from posts p join members vm on vm.id = $2
+       left join channels c on c.id = p.channel_id left join spaces s on s.id = c.space_id
+      where p.id = any($1::bigint[]) and (
+        (p.dm_id is not null and exists (select 1 from dm_members dm where dm.dm_id = p.dm_id and dm.member_id = vm.id))
+        or (p.channel_id is not null and ${canViewSql("vm", "c", "s")}))
+     on conflict do nothing`, [list, me.id]);
 }
 
 export async function markRead(me: Me, scope: { channelId?: number; dmId?: number }) {

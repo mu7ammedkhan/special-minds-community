@@ -1,4 +1,4 @@
-import { requireStaff } from "@/lib/auth";
+import { isAdmin, requireStaff } from "@/lib/auth";
 import { crmReady } from "@/lib/crm";
 import { query } from "@/lib/db";
 import { fmtPhone, timeAgo } from "@/lib/format";
@@ -11,11 +11,14 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Help requests" };
 
 export default async function HelpRequests() {
-  await requireStaff("moderator");
+  const me = await requireStaff("moderator");
   const { t, locale } = await getT();
   const crm = crmReady();
+  // Moderators see the requests from their own spaces; admins see them all.
+  const scope = isAdmin(me) ? "" : "where h.space_id = any($1::int[])";
   const rows = await query<{ id: number; service: string; child_age: string | null; city: string | null; area: string | null; details: string | null; name: string; phone: string | null; email: string | null; contact_by: string; status: string; crm_ref: string | null; error: string | null; created_at: string; space: string | null }>(
-    `select h.*, s.name as space from help_requests h left join spaces s on s.id = h.space_id order by (h.status in ('new', 'failed')) desc, h.created_at desc limit 200`);
+    `select h.*, s.name as space from help_requests h left join spaces s on s.id = h.space_id ${scope} order by (h.status in ('new', 'failed')) desc, h.created_at desc limit 200`,
+    isAdmin(me) ? [] : [me.spaces]);
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-4 py-6 sm:px-6">
       <PageHeader title={t("Help requests")} subtitle={t("Families who pressed “Ask Special Minds for help”.")} />
